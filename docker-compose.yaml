@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/code
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgresql
+      - redis
+
+  postgresql:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=sahal
+      - POSTGRES_PASSWORD=09876
+      - POSTGRES_DB=Chat
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis
+
+volumes:
+  postgresql_data:

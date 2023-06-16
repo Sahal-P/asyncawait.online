@@ -1,0 +1,14 @@
+psycopg2-binary
+channels_redis
+Pillow
+daphne
+Django
+django-cors-headers
+django-filter
+djangorestframework
+Markdown
+channels
+asgiref
+colorlog
+PyJWT
+pyotp
