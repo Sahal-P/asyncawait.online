@@ -2,6 +2,7 @@ import json
 from uuid import UUID
 import msgpack
 
+
 class UUIDDecoder(json.JSONDecoder):
     def __init__(self, *args, **kwargs):
         super().__init__(object_hook=self.dict_to_object, *args, **kwargs)
@@ -19,14 +20,14 @@ class UUIDDecoder(json.JSONDecoder):
             return True
         except ValueError:
             return False
-        
+
+
 class UUIDEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, UUID):
             return str(obj)
         return super().default(obj)
-    
 
-        
+
 # json_data = '{"uuid_field": "550e8400-e29b-41d4-a716-446655440000"}'
 # data = json.loads(json_data, cls=UUIDDecoder)

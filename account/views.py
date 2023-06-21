@@ -15,10 +15,11 @@ class UserAPIView(generics.GenericAPIView):
         serializer = self.serializer_class(user)
         data = serializer.data
         return Response(status=status.HTTP_200_OK, data=data)
-        
+
+
 class UsersAPIView(generics.GenericAPIView):
     serializer_class = UserSerializer
-    
+
     @method_decorator(cache_page(60 * 60))
     def get(self, request):
         friends = User.objects.filter(is_superuser=False)
@@ -28,15 +29,15 @@ class UsersAPIView(generics.GenericAPIView):
         data = serializer.data
         return Response(status=status.HTTP_200_OK, data=data)
 
+
 class RegisterAPIView(generics.GenericAPIView):
-    
     serializer_class = UserSerializer
 
     def post(self, request):
         user = request.data
         if user["password"] != user["confirm_password"]:
-            raise exceptions.APIException('Password do not match')
-        
+            raise exceptions.APIException("Password do not match")
+
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
