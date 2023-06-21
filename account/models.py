@@ -1,5 +1,6 @@
 from typing import Any
 from django.db import models
+import uuid
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 
 class UserManager(BaseUserManager):
@@ -29,6 +30,7 @@ class UserManager(BaseUserManager):
     
 
 class User(AbstractBaseUser, PermissionsMixin):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     username = models.CharField(max_length= 100)
     email = models.EmailField(max_length= 100,unique=True)
     phone_number = models.CharField(max_length= 15,unique=True)
