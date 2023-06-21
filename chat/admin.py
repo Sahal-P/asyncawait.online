@@ -1,6 +1,4 @@
 from django.contrib import admin
-
-# Register your models here.
 from .models import Chat, Message, Notification, UserProfile, MediaMessage, Contacts
 
 admin.site.register(Chat)
