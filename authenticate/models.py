@@ -1,8 +1,9 @@
 from django.db import models
+import uuid
 
 
 class UserToken(models.Model):
-    user_id = models.IntegerField()
+    user_id = models.UUIDField(default=uuid.uuid4)
     token = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     is_admin        = models.BooleanField(default=False)

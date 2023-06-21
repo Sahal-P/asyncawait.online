@@ -9,19 +9,12 @@ from rest_framework.authentication import get_authorization_header,BaseAuthentic
 
 
 class JWTAuthentication(BaseAuthentication):
-	def authenticate(self, request):
-		auth = get_authorization_header(request).split()
-		print(auth)
-		token=auth[1].decode('utf-8')
-		token = request.COOKIES.get('access_token')
-		print(request)
-		# if auth and len(auth)==2:
-		if token:
-			# token = auth[1].decode('utf-8')
-			user = get_user(token)
-			return (user, None)
-
-		raise exceptions.AuthenticationFailed('unauthenticated')
+    def authenticate(self, request):
+        token = request.COOKIES.get('access_token')
+        if token:
+            user = get_user(token)
+            return (user, None)
+        raise exceptions.AuthenticationFailed('unauthenticated')
 
 class AdminAuthPermission(BaseAuthentication):
 	def authenticate(self, request):
@@ -45,7 +38,7 @@ def create_access_token(id, admin=False):
 		secret = "access_secret"
 	return jwt.encode({
 			'user_id':id,
-			'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=30),
+			'exp': datetime.datetime.utcnow() + datetime.timedelta(days=1),
 			'iat': datetime.datetime.utcnow()
 		}, secret, algorithm ='HS256')
 
@@ -91,12 +84,12 @@ def create_refresh_token(id, admin=False):
 
 
 def get_user(token,is_admin=False):
-	id = decode_access_token(token, is_admin)
-	try:
-		user = User.objects.get(pk=id)
-		return user
-	except:
-		raise exceptions.AuthenticationFailed('unauthenticated')
+    id = decode_access_token(token, is_admin)
+    try:
+        user = User.objects.get(pk=id)
+        return user
+    except:
+        raise exceptions.AuthenticationFailed('unauthenticated')
 
 
 def send_email(email,token,mail_type):

@@ -27,36 +27,19 @@ class RegisterApiView(APIView):
 class LoginApiView(APIView):
 
     def post(self,request):
-        print('yes-------------')
         phone_number = request.data['phone_number']
         password = request.data['password']
         print(phone_number)
         user = User.objects.filter(phone_number = phone_number).first()
-        print(user,'user--------------')
         if user is None:
-            print('first-----------')
             raise exceptions.AuthenticationFailed('Invalid Credentials')
         if not user.check_password(password):
-            print('second -----------------')
             raise exceptions.AuthenticationFailed('Invalid Password')
-        print(user.id)
-        # if user.tfa_secret:
-        #     return Response({
-        #         "id":user.id
-        #         })
-
-        # secret = pyotp.random_base32()
-        # otpauth_url = pyotp.totp.TOTP(secret).provisioning_uri(issuer_name ="My App")
-
-        # response = Response({
-        #     "id":user.id,
-        #     "secret":secret,
-        #     "otpauth_url":otpauth_url
-        #     })
-
-        # return response
-        access_token = create_access_token(user.id)
-        refresh_token = create_refresh_token(user.id)
+        
+        serializer = UserSerializer(user)
+        data = serializer.data
+        access_token = create_access_token(data['id'])
+        refresh_token = create_refresh_token(data['id'])
         UserToken.objects.create(
                 user_id= user.id,
                 token= refresh_token,
@@ -65,7 +48,6 @@ class LoginApiView(APIView):
         response = Response()
         response.set_cookie(key='refresh_token', value= refresh_token, httponly = True)
         response.set_cookie(key='access_token', value= access_token, httponly = True)
-        serializer = UserSerializer(user)
         response.data = serializer.data
         return response
 

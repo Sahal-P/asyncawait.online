@@ -12,3 +12,5 @@ asgiref
 colorlog
 PyJWT
 pyotp
+django-redis
+django-debug-toolbar
