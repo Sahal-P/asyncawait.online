@@ -76,7 +76,6 @@ class Contacts(models.Model):
                 is_blocked=self.is_blocked,
             )
 
-
 class MediaMessage(Message):
     media_file = models.FileField(upload_to="media_messages")
 

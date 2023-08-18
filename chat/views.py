@@ -68,12 +68,12 @@ class GetChatIDAPIView(views.APIView):
 
 class GetContactsAPIView(views.APIView):
     authentication_classes = [JWTAuthentication]
-
+    
     # def dispatch(self, *args, **kwargs):
     #     return super().dispatch(*args, **kwargs)
 
-    @method_decorator(cache_page(60 * 60))
-    @method_decorator(vary_on_headers("X-User-Identifier"))
+    # @method_decorator(cache_page(60 * 60))
+    # @method_decorator(vary_on_headers("X-User-Identifier"))
     def get(self, request):
         user = request.user
         contacts = Contacts.objects.filter(user=user)

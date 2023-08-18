@@ -7,7 +7,7 @@ SECRET_KEY = "django-insecure-gy5h$*cbn#*2r0-p87ixu$69z@5-26bdfw6irwc20fpevlmgx6
 
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost"]
+ALLOWED_HOSTS = ["localhost", "api.asyncawait.dev", "127.0.0.1"]
 
 INTERNAL_IPS = [
     "127.0.0.1",
@@ -186,6 +186,9 @@ CORS_ALLOW_HEADERS = [
     "Content-Type",
     "X-User-Identifier",
 ]
+
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 
 LOGGING = {
     "version": 1,

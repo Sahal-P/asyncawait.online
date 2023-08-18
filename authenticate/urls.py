@@ -17,13 +17,13 @@ from .views import (
 )
 
 urlpatterns = [
-    path("register", RegisterApiView.as_view()),
-    path("login", LoginApiView.as_view()),
+    path("register", RegisterApiView.as_view(), name="register"),
+    path("login", LoginApiView.as_view(), name="login"),
     path("admin-login", AdminLoginApiView.as_view()),
     path("get-user", UserAPIView.as_view()),
     path("get-users", UsersAPIView.as_view()),
     path("refresh-token", RefreshAPIView.as_view()),
-    path("logout", LogOutAPIView.as_view()),
+    path("logout", LogOutAPIView.as_view(), name="logout"),
     path("reset", ResetAPIView.as_view()),
     path("forgot", ForgotAPIView.as_view()),
     path("admin", AdminLgoinAPIView.as_view()),

@@ -2,6 +2,14 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import async_to_sync
 import json
 
+NOTIFICATION = {
+    "NEW_MESSAGE": "NEW_MESSAGE",
+    "READED_MESSAGE": "READED_MESSAGE",
+    "DELIVERD_MESSAGE": "DELIVERD_MESSAGE",
+    "PERSON_IS_TYPING": "PERSON_IS_TYPING",
+    "PERSON_NOT_TYPING": "PERSON_NOT_TYPING",
+}
+
 
 class UserConnection(AsyncWebsocketConsumer):
     async def connect(self):
