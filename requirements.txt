@@ -14,3 +14,4 @@ PyJWT
 pyotp
 django-redis
 django-debug-toolbar
+phonenumbers

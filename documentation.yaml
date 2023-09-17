@@ -1,0 +1,51 @@
+---
+openapi: 3.0.0
+info:
+  title: AsyncAwait - Authentication API
+  description: The API for the JWT Token Based Authentication
+  version: 1.0.0
+servers:
+- url: https://virtserver.swaggerhub.com/Sahal-P/Async-Await.Online/1.0.0
+  description: SwaggerHub API Auto Mocking
+- url: https://asyncawait.online/app/auth/
+  description: mobile app auth service
+paths:
+  /register/:
+    post:
+      tags:
+      - Registration
+      summary: Register a new user
+      description: "Register a new user with email, username, password, and phone number."
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+        required: true
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              example:
+                id: 12345678-90ab-cdef-ghij-klmnopqrstuv
+                email: user@example.com
+                username: exampleuser
+                phone_number: 1234567890
+components:
+  schemas:
+    UserRegistration:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        password:
+          type: string
+        confirm_password:
+          type: string
+        phone_number:
+          pattern: "^\\+\\d{10,15}$"
+          type: string

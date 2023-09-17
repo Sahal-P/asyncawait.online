@@ -3,7 +3,8 @@ from rest_framework.views import APIView
 import datetime, random, string
 from rest_framework.response import Response
 from rest_framework import exceptions, status
-from account.serializers import UserSerializer
+from account.serializers import UserSerializer, UserDetailsSerializer
+from authenticate.serializers import CreateProfileSerializer, LoginSerializer
 from .models import UserToken, Reset
 from account.models import User
 from .authenticate import (
@@ -14,6 +15,7 @@ from .authenticate import (
     send_email,
 )
 import pyotp
+import phonenumbers
 
 
 class RegisterApiView(APIView):
@@ -25,32 +27,117 @@ class RegisterApiView(APIView):
     """
     def post(self, request):
         # Extract and validate data from the request 
+        print(request.data)
         data = self._get_validated_data(request.data)
-        
+        print(data)
         # Creates a new user instance
         serializer = UserSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        
+                
         # Craft and return a response with appropriate status code
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     def _get_validated_data(self, data):
         # Validate passwords and phone number presence
         self._validate_password(data)
-        self._validate_phone_nummber(data)
+        self._validate_email(data)
+        self._validate_duplicate(data)
+        # formatted_number = self._validate_phone_nummber(data)
+        # data["phone_number"] = formatted_number
         return data
+    
+    def _validate_duplicate(self, data):
+        pass
     
     def _validate_password(self, data):
         # Ensure that password and confirm_password match
         if data["password"] != data["confirm_password"]:
-            raise exceptions.APIException("Password do not match")
-        
+            raise exceptions.ValidationError("Password do not match")
+    
+    def _validate_email(self, data):
+        # Ensure that email is present in the data
+        if "email" not in data:
+            raise exceptions.ValidationError("Email is required")
+    
+                
     def _validate_phone_nummber(self, data):
         # Ensure that phone_number is present in the data
         if "phone_number" not in data:
-            raise exceptions.APIException("Phone number is required")
+            raise exceptions.ValidationError("Phone number is required")
+        phone_number = data.get("phone_number")
+        try:
+            parsed_number = phonenumbers.parse(phone_number, None)
+            if not phonenumbers.is_valid_number(parsed_number):
+                raise exceptions.ValidationError("Invalid phone number format")
+            formatted_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
+            return formatted_number
+            
+        except phonenumbers.NumberParseException:
+            raise exceptions.ValidationError("Invalid phone number format")
+        except:
+            raise exceptions.ValidationError("Error Ocuured During The Validation of Phone Number")
+            
+
+
+class CreateProfileApiView(APIView):
+    """
+    API view  for user registration
+    Args:
+        APIView (class): A class from the Django Rest Framework for handling HTTP requests.
+            This view extends the base APIView class to handle user registration.
+    """
+    serializer_class = CreateProfileSerializer
+
+    def post(self, request):
+        # Extract and validate data from the request 
+        print(request.data)
+        data, user = self._get_validated_data(request.data)
+        print(data)
+        # Creates a new user instance
+        serializer = self.serializer_class(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        print(serializer.data)
+                
+        # Craft and return a response with appropriate status code
+        return Response(None, status=status.HTTP_201_CREATED)
+    
+    def _get_validated_data(self, data):
+        # Validate passwords and phone number presence
+        self._validate_profile(data)
+        self._validate_username(data)
+        self._validate_about(data)
+        user = self._get_registerd_user(data)
+    
+        return data, user
+    
+    def _validate_profile(self, data):
+        # Ensure that password and confirm_password match
+        pass
+    
+    def _validate_about(self, data):
+        # Ensure that email is present in the data
+        if "about" not in data:
+            raise exceptions.ValidationError("About is required")
         
+    def _get_registerd_user(self, data):
+        try:
+            # Attempt to retrieve the user based on the provided ID
+            user = User.objects.get(id=data['user'])
+            # data['user'] = user.id  # Set the user field to the retrieved user instance
+            return user
+        except User.DoesNotExist:
+            raise exceptions.ValidationError("User Not Found")
+        except:
+            raise exceptions.ValidationError("Error While Verifying User")
+    
+    def _validate_username(self, data):
+        # Ensure that username is present in the data
+        if "username" not in data:
+            raise exceptions.ValidationError("Username is required")
+                
+   
 
 
 class LoginApiView(APIView):
@@ -63,24 +150,45 @@ class LoginApiView(APIView):
     def post(self, request):
         
         user = self._get_validated_data(request.data)
-        serializer = UserSerializer(user)
+        serializer = UserDetailsSerializer(user)
         data = serializer.data
         token = self._create_jwt_token(user, data)
-        response = self._set_httponly_cookie(data, token)
+        # response = self._set_httponly_cookie(data, token)
+        response = self._add_jwt_token(data, token)
         
         return response
     
     def _get_validated_data(self, data):
         
-        phone_number = data["phone_number"]
+        phone_number = self._validate_phone_nummber(data)
         password = data["password"]
+        print(phone_number,password)
         user = User.objects.filter(phone_number=phone_number).first()
         if user is None:
             raise exceptions.AuthenticationFailed("Invalid Credentials")
         if not user.check_password(password):
-            raise exceptions.AuthenticationFailed("Invalid Password")
+            raise exceptions.AuthenticationFailed("Invalid Credentials")
         
         return user
+    
+    def _validate_phone_nummber(self, data):
+        # Ensure that phone_number is present in the data
+        if "phone_number" not in data:
+            raise exceptions.ValidationError("Phone number is required")
+        phone_number = data.get("phone_number")
+        return phone_number
+        # try:
+        #     parsed_number = phonenumbers.parse(phone_number, None)
+        #     if not phonenumbers.is_valid_number(parsed_number):
+        #         raise exceptions.ValidationError("Invalid phone number format")
+        #     formatted_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
+        #     return formatted_number
+            
+        # except phonenumbers.NumberParseException:
+        #     raise exceptions.ValidationError("Invalid phone number format")
+        # except Exception as e:
+        #     print(e)
+        #     raise exceptions.ValidationError("Error Ocuured During The Validation of Phone Number")
     
     def _create_jwt_token(self, user, data):
         
@@ -93,13 +201,20 @@ class LoginApiView(APIView):
         )
         return [access_token, refresh_token]
     
+    # Currently Not Using this Method 
     def _set_httponly_cookie(self, data, token):
-        
+        access_expiration, refresh_expiration = datetime.datetime.now() + datetime.timedelta(days=1), datetime.datetime.now() + datetime.timedelta(days=7)
         response = Response()
-        response.set_cookie(key="refresh_token", value=token[1], httponly=True, secure=True )
-        response.set_cookie(key="access_token", value=token[0], httponly=True, secure=True)
+        response.set_cookie(key="refresh_token", value=token[1], httponly=True, secure=True , expires=refresh_expiration, samesite=False )
+        response.set_cookie(key="access_token", value=token[0], httponly=True, secure=True, expires=access_expiration, samesite=False)
         response.data = data
         
+        return response
+    
+    def _add_jwt_token(self, data, token):
+        response = Response()
+        data['access_token'], data['refresh_token'] = token[0], token[1]
+        response.data = data
         return response
     
     
@@ -108,7 +223,7 @@ class LogOutAPIView(APIView):
 
     def post(self, request):
         
-        self._handle_token(request.COOKIES)
+        # self._handle_token(request.COOKIES)
         response = self._handle_delete_cookie()
         return response
     
@@ -125,35 +240,9 @@ class LogOutAPIView(APIView):
     def _handle_delete_cookie(self):
         
         response = Response(status=status.HTTP_204_NO_CONTENT)
-        response.delete_cookie(key="refresh_token")
-        response.delete_cookie(key="access_token")
+        # response.delete_cookie(key="refresh_token")
+        # response.delete_cookie(key="access_token")
         response.data = {"message": "User logged out"}
-        return response
-
-class AdminLoginApiView(APIView):
-    def post(self, request):
-        email = request.data["email"]
-        password = request.data["password"]
-        user = User.objects.filter(email=email, is_admin=True).first()
-        if user is None:
-            raise exceptions.AuthenticationFailed("Invalid Credentials")
-        if not user.check_password(password):
-            raise exceptions.AuthenticationFailed("Invalid Password")
-        print(user.id)
-        access_token = create_access_token(user.id, admin=True)
-        refresh_token = create_refresh_token(user.id, admin=True)
-        UserToken.objects.create(
-            user_id=user.id,
-            token=refresh_token,
-            expired_at=datetime.datetime.utcnow() + datetime.timedelta(days=7),
-            is_admin=True,
-        )
-        response = Response()
-        response.set_cookie(
-            key="admin_refresh_token", value=refresh_token, httponly=True
-        )
-        response.set_cookie(key="admin_access_token", value=access_token, httponly=True)
-        response.data = {"token": access_token}
         return response
 
 
@@ -179,30 +268,9 @@ class TwoFactorAPIView(APIView):
         return response
 
 
-class LoginWithPhoneAPIView(APIView):
-    def post(self, request):
-        phone_number = request.data["phone_number"]
-        return Response({"verify": "success"})
-
-
-class UserAPIView(APIView):
-    # authentication_classes = [JWTAuthentication]
-
-    def get(self, request):
-        return Response(UserSerializer(request.user).data)
-
-
-class UsersAPIView(APIView):
-    # authentication_classes = [JWTAuthentication]
-
-    def get(self, request):
-        user = User.objects.all()
-        return Response(UserSerializer(user, many=True).data)
-
-
 class RefreshAPIView(APIView):
     def post(self, request):
-        is_admin = request.data["is_admin"]
+        is_admin = request.data["token"]
         print(is_admin)
         refresh_token = request.COOKIES.get("refresh_token")
         id = decode_refresh_token(refresh_token)
@@ -214,8 +282,8 @@ class RefreshAPIView(APIView):
         ).exists():
             raise exceptions.AuthenticationFailed("unauthenticated")
         access_token = create_access_token(id)
-        response = Response({"token": access_token})
-        response.set_cookie(key="access_token", value=access_token, httponly=True)
+        data = {"access_token": access_token}
+        response = Response(data=data, status=status.HTTP_200_OK)
         return response
 
 
@@ -254,11 +322,3 @@ class ResetAPIView(APIView):
         return Response({"message": "success"})
 
 
-class AdminLgoinAPIView(APIView):
-    def post(self, request):
-        return Response()
-
-
-class AdminLogOutAPIView(APIView):
-    def post(self, request):
-        return Response()
