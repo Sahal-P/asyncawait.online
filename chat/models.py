@@ -17,13 +17,13 @@ class Message(models.Model):
         ("DELIVERED", "Delivered"),
         ("SEEN", "Seen"),
     ]
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, editable=False)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="messages")
     sender = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="sent_message"
     )
     content = models.TextField()
-    timestampe = models.DateTimeField(default=datetime.now)
+    timestampe = models.DateTimeField()
     has_replay = models.BooleanField(default=False)
     replay_to_msg = models.ForeignKey(
         "self", on_delete=models.CASCADE, null=True, blank=True
@@ -41,8 +41,14 @@ class UserProfile(models.Model):
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     profile_picture = models.ImageField(
-        upload_to="profile_pictures", blank=True, null=True
+        upload_to="images/profile_pictures", blank=True, null=True
     )
+    default_avatar = models.CharField(
+        default="images/profile_pictures", blank=True, null=True
+    )
+    username = models.CharField(max_length=100, blank=True, null=True)
+    about = models.CharField(max_length=200, blank=True, null=True)
+    
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="OFFLINE")
     last_seen = models.DateTimeField(null=True, blank=True)
 

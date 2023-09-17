@@ -7,7 +7,7 @@ SECRET_KEY = "django-insecure-gy5h$*cbn#*2r0-p87ixu$69z@5-26bdfw6irwc20fpevlmgx6
 
 DEBUG = True
 
-ALLOWED_HOSTS = ["localhost", "api.asyncawait.dev", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "api.asyncawait.dev","asyncawait.dev", "127.0.0.1"]
 
 INTERNAL_IPS = [
     "127.0.0.1",
@@ -16,11 +16,9 @@ INTERNAL_IPS = [
 INSTALLED_APPS = [
     "channels",
     "daphne",
-    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
-    "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
@@ -38,7 +36,6 @@ MIDDLEWARE = [
     "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
@@ -93,6 +90,7 @@ ASGI_APPLICATION = "watsapp_backend.asgi.application"
 WSGI_APPLICATION = "watsapp_backend.wsgi.application"
 
 
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -100,9 +98,11 @@ DATABASES = {
         "USER": "sahal",
         "PASSWORD": "09876",
         "HOST": "postgresql",
+        # "HOST": "localhost",
         "PORT": "5432",
     }
 }
+
 
 CACHES = {
     "default": {
@@ -113,6 +113,7 @@ CACHES = {
         },
     }
 }
+
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
@@ -128,7 +129,6 @@ CACHE_TTL = 60 * 1
 #         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
 #     }
 # }
-
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -149,7 +149,7 @@ AUTH_USER_MODEL = "account.User"
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = "UTC"
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -166,7 +166,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = [
-    "http://localhost:5173",
+    "http://localhost:3001",
+    # "https://asyncawait.dev",
+    # "https://api.asyncawait.dev"
 ]
 
 CORS_ALLOW_METHODS = [
@@ -179,16 +181,22 @@ CORS_ALLOW_METHODS = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    "http://localhost:3001",
+    # "https://asyncawait.dev",
+    # "https://api.asyncawait.dev"
 ]
 
 CORS_ALLOW_HEADERS = [
     "Content-Type",
     "X-User-Identifier",
+    "Authorization",
 ]
 
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SESSION_COOKIE_DOMAIN = 'https://api.asyncawait.dev'
 
 LOGGING = {
     "version": 1,
@@ -196,7 +204,7 @@ LOGGING = {
     "formatters": {
         "verbose": {
             "()": "colorlog.ColoredFormatter",
-            "format": "[%(log_color)s%(levelname)s%(reset)s] %(asctime)s [%(name)s %(funcName)s %(lineno)d] %(message)s",
+            "format": "[%(log_color)s%(levelname)s%(reset)s] %(asctime)s [%(name)s %(funcName)s %(lineno)d] [%(log_color)s%(message)s%(reset)s]",
             "datefmt": "%Y-%m-%d %H:%M:%S",
             "log_colors": {
                 "DEBUG": "blue",
@@ -217,9 +225,15 @@ LOGGING = {
         },
         "simple": {"format": "[%(levelname)s] %(message)s"},
     },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
     "handlers": {
         "console": {
             "level": "INFO",
+            'filters': ['require_debug_true'],
             "class": "logging.StreamHandler",
             "formatter": "verbose",
         }

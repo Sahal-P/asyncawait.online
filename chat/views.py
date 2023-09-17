@@ -1,3 +1,4 @@
+import logging
 from rest_framework import generics, status, views, permissions, exceptions
 from rest_framework.response import Response
 from account.models import User
@@ -17,40 +18,74 @@ from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_headers
 
 
-# Create your views here.
-class ChatAPIView(generics.GenericAPIView):
-    def get(self, request):
-        return Response
-
+logger = logging.getLogger(__name__)
 
 class MessageUnknownAPIView(views.APIView):
+    """
+    API view for sending a message to an unknown user.
+
+    This view handles the scenario where a user wants to send a message to another user
+    who is not yet in their contacts. It creates a new chat between the requesting user
+    and the unknown user, and also adds them to each other's contacts.
+
+    Attributes:
+        authentication_classes (list): List of authentication classes applied to this view.
+
+    Returns:
+        Response: A response with a serialized contact objects and a status code 200.
+    """
+    
     authentication_classes = [JWTAuthentication]
 
     def post(self, request):
-        serialized_data = MessageUnknownSerializer(data=request.data)
+        
+        data = self._validate_data(request.data)
+        user = self._get_requested_user(request.user.id)
+        second_user = self._get_requested_user(data["id"])
+        self._validate_chat_participants(user, second_user)
+        data = self._create_chat(user, second_user)
+        return Response(status=status.HTTP_200_OK, data=data)
+    
+    def _validate_data(self, data):
+        serialized_data = MessageUnknownSerializer(data=data)
         serialized_data.is_valid(raise_exception=True)
-        data = serialized_data.data
-        user = User.objects.get(id=request.user.id)
-        second_user = User.objects.get(id=data["id"])
+        return serialized_data.data
+    
+    def _get_requested_user(self, id):
+        # The user that request for an Unknown connection 
+        try:
+            return User.objects.get(id=id)
+        except User.DoesNotExist:
+            raise exceptions.NotFound("Requested user not found.")
+    
+    def _validate_chat_participants(self, user, unknown_user):
         chat = (
             Chat.objects.filter(participants=user, is_group_chat=False)
-            .filter(participants=second_user)
+            .filter(participants=unknown_user)
             .exists()
         )
         if chat:
             raise exceptions.APIException("participents already exits")
-        chat = Chat.objects.create(is_group_chat=False)
-        chat.participants.add(user)
-        chat.participants.add(second_user)
-        chat.full_clean()
-        chat.save()
+    
+    def _create_chat(self, user, second_user):
+        try:
+            chat = Chat.objects.create(is_group_chat=False)
+            chat.participants.add(user)
+            chat.participants.add(second_user)
+            chat.full_clean()
+            chat.save()
+            return self._get_contacts(user, second_user)
+        except Exception as e:
+            # Handle the exception as needed
+            raise exceptions.APIException(f"Error Creating Chat: {str(e)}")
+        
+    def _get_contacts(self, user, second_user):
         contact = Contacts.objects.create(
             user=user, contact=second_user, is_accepted=True
         )
         serialized_data = ContactsSerializer(contact)
-        return Response(status=status.HTTP_200_OK, data=serialized_data.data)
-
-
+        return serialized_data.data
+    
 class GetChatIDAPIView(views.APIView):
     authentication_classes = [JWTAuthentication]
 
@@ -86,6 +121,7 @@ class GetChatDetailsAPIView(views.APIView):
 
     def post(self, request):
         serialized_data = GetChatDetailsSerializer(data=request.data)
+        logger.critical("Error Login user with params: dhfbvjdbdjfbv")
         serialized_data.is_valid(raise_exception=True)
         data = serialized_data.data
         user = request.user

@@ -6,21 +6,54 @@ from .models import User
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_headers
+from authenticate.authenticate import JWTAuthentication
 
 
 
 
 class UsersAPIView(generics.GenericAPIView):
-    serializer_class = UserSerializer
+    """
+    API view for retrieving a list of users.
 
+    This view returns a list of all users who are not superusers.
+    
+    Attributes:
+        serializer_class (Serializer): The serializer class for user data.
+
+    Methods:
+        get(request): Handles the GET request for retrieving user data.
+    """
+    
+    authentication_classes = [JWTAuthentication]
+    serializer_class = UserSerializer
     # @method_decorator(cache_page(60 * 60))
     # @method_decorator(vary_on_headers("X-User-Identifier"))
     def get(self, request):
         
-        friends = User.objects.filter(is_superuser=False)
-        serializer = self.serializer_class(friends, many=True)
-        data = serializer.data
+        users = self._get_users(request.user.id)
+        serialized_data = self.serialize_users(users)
+        data = serialized_data
         return Response(status=status.HTTP_200_OK, data=data)
 
 
+    def _get_users(self, user_id):
+        """
+        Retrieve a list of users who are not superusers.
 
+        Returns:
+            QuerySet: A queryset of non-superuser users.
+        """
+        return User.objects.filter(is_superuser=False).exclude(id= user_id)
+
+    def serialize_users(self, users):
+        """
+        Serialize a list of users.
+
+        Args:
+            users (QuerySet): A queryset of user instances.
+
+        Returns:
+            dict: Serialized user data.
+        """
+        serializer = self.serializer_class(users, many=True)
+        return serializer.data
