@@ -1,10 +1,25 @@
-version: '3'
+version: "3"
 
 networks:
   my_network:
     driver: bridge
 
 services:
+  # nginx:
+  #   image: nginx
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+  #     - ./nginx/ssl:/etc/nginx/ssl:ro
+  #     - ./frontend/dist:/var/www/frontend
+  #   restart: unless-stopped
+  #   ports:
+  #     - 80:80
+  #     - 443:443
+  #   networks:
+  #     - my_network
+  #   depends_on:
+  #     - web
+  #     - frontend
   web:
     build:
       context: .
@@ -20,35 +35,19 @@ services:
     depends_on:
       - postgresql
       - redis
-    
+      - rabbitmq
 
   # frontend:
-  #   build: 
+  #   build:
   #     context: ./frontend
   #   volumes:
   #     - ./frontend/dist:/frontend/dist
 
-  #   restart: always  
+  #   restart: always
   #   networks:
   #     - my_network
   #   ports:
   #     - 3000:3000
-
-  # nginx:  
-  #   image: nginx
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-  #     - ./nginx/ssl:/etc/nginx/ssl:ro
-  #     - ./frontend/dist:/var/www/frontend
-  #   restart: unless-stopped
-  #   ports:
-  #     - 80:80
-  #     - 443:443
-  #   networks:
-  #     - my_network
-  #   depends_on:
-  #     - web
-  #     - frontend
 
   postgresql:
     image: postgres:latest
@@ -57,16 +56,39 @@ services:
       - POSTGRES_PASSWORD=09876
       - POSTGRES_DB=Chat
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
       - postgresql_data:/var/lib/postgresql/data
+    networks:
+      - my_network
+  
+  rabbitmq:
+    image: rabbitmq:management
+    restart: always
+    container_name: rabbitmq
+    ports:
+      - 5672:5672
+      - 15672:15672
     networks:
       - my_network
 
   redis:
     image: redis
     ports:
-      - '6379:6379'
+      - "6379:6379"
+    networks:
+      - my_network
+
+  worker:
+    restart: always
+    build: .
+    command: celery -A watsapp_backend worker -l INFO -B
+    volumes:
+      - .:/app
+
+    depends_on:
+      - web
+      - redis
     networks:
       - my_network
 

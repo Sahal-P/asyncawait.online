@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "account",
     "chat",
     "authenticate",
+    "notification",
 ]
 
 MIDDLEWARE = [
@@ -194,6 +195,9 @@ CORS_ALLOW_HEADERS = [
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_BROKER_URL = "amqp://guest:guest@rabbitmq:5672/"
+CELERY_RESULT_BACKEND = "redis://redis:6379/0"
 
 # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # SESSION_COOKIE_DOMAIN = 'https://api.asyncawait.dev'

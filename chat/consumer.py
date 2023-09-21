@@ -7,7 +7,7 @@ from .models import Chat, MediaMessage, Message, UserProfile
 from account.models import User
 import uuid
 from account.uuid_serializer import UUID, UUIDEncoder
-
+from notification.tasks import send_websocket_notification
 MESSAGE_MAX_LENGTH = 100
 
 MESSAGE_ERROR_TYPE = {
@@ -37,7 +37,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     
     async def connect(self):
         self.room_group_name = self.scope["url_route"]["kwargs"]["room_name"]
-        print(self.channel_name)
+        print(self.room_group_name, 'chat_id')
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
         self.chat = await self.get_chat_obj(self.room_group_name)
@@ -51,9 +51,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         timestampe = text_data_json.get("timestampe")
         # Handle received data
         if msg_type == MESSAGE_TYPE["TEXT_MESSAGE"]:
+            send_websocket_notification.delay(sender, content)
             message_id = uuid.UUID(text_data_json.get("id"))
             # message_id = uuid.uuid4()
             id = text_data_json.get("id")
+            await self.save_text_message(text_data_json, message_id)
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -65,7 +67,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     # "temp_id":temp_id,
                 },
             )
-            await self.save_text_message(text_data_json, message_id)
             
         elif msg_type == MESSAGE_TYPE["MESSAGE_READED"]:
             id = text_data_json.get("id")
@@ -89,8 +90,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "sender": sender,
                 },
             )
-            # await self.save_message_status(msg_type, content)
-
+        
     async def chat_message(self, event):
         await self.send(
             text_data=json.dumps(
@@ -127,6 +127,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
         )
+    async def send_notification(self, event):
+        print('ChatConnection COnsumer !!!!!!!!!!!!!!!!!!!!!!!')
+        
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "message_type": "notify",
+                    "content": event['message'],
+                }
+            )
+        )
 
     async def disconnect(self, code):
         # self.set_offline()
@@ -135,7 +146,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def save_text_message(self, message, message_id):
         dt_timestamp = datetime.strptime(message["timestampe"], "%Y-%m-%d %H:%M:%S.%f")
-        print(dt_timestamp,'@@@@@@@@@@@@@@@@@@@@@@@@@@@@',message["timestampe"])
         sender = User.objects.get(id=message["sender"])
         obj = Message.objects.create(
             id=message_id,

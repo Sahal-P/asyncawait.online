@@ -1,7 +1,8 @@
 from django.shortcuts import render
 from rest_framework import generics, status, views, permissions, exceptions
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserProfileDetailsSerializer, UserProfile
 from rest_framework.response import Response
+
 from .models import User
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
@@ -25,7 +26,7 @@ class UsersAPIView(generics.GenericAPIView):
     """
     
     authentication_classes = [JWTAuthentication]
-    serializer_class = UserSerializer
+    serializer_class = UserProfileDetailsSerializer
     # @method_decorator(cache_page(60 * 60))
     # @method_decorator(vary_on_headers("X-User-Identifier"))
     def get(self, request):
@@ -43,7 +44,7 @@ class UsersAPIView(generics.GenericAPIView):
         Returns:
             QuerySet: A queryset of non-superuser users.
         """
-        return User.objects.filter(is_superuser=False).exclude(id= user_id)
+        return UserProfile.objects.all().exclude(user= user_id)
 
     def serialize_users(self, users):
         """

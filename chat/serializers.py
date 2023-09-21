@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from account.serializers import UserSerializer, UUIDField
+from account.serializers import UserSerializer, UUIDField, UserProfileDetailsSerializer
 from account.models import User
 from .models import Chat, Contacts, Message
 
@@ -14,7 +14,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
 class ContactsSerializer(serializers.ModelSerializer):
     contact = UserSerializer(read_only=True)
-
+    
     class Meta:
         model = Contacts
         fields = (

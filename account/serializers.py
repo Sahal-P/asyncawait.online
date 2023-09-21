@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import User
 from uuid import UUID
+from chat.models import UserProfile
 
 
 class UUIDField(serializers.Field):
@@ -17,9 +18,15 @@ class UUIDField(serializers.Field):
             raise serializers.ValidationError("Invalid UUID Format")
         except:
             raise Exception("somthing went wrong with uuid field")
-        
+
+class UserProfileDetailsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = "__all__"  
+
         
 class UserDetailsSerializer(serializers.ModelSerializer):
+    profile = UserProfileDetailsSerializer(read_only=True)
     class Meta:
         model = User
         fields = "__all__"  
@@ -27,10 +34,10 @@ class UserDetailsSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     id = UUIDField(read_only=True)
-
+    profile = UserProfileDetailsSerializer(read_only=True)
     class Meta:
         model = User
-        fields = ["id", "email", "password", "phone_number"]
+        fields = ["id", "email", "password", "phone_number", "profile"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):

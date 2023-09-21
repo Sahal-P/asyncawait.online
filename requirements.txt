@@ -15,3 +15,5 @@ pyotp
 django-redis
 django-debug-toolbar
 phonenumbers
+celery[redis]
+flower
