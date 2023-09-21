@@ -1,5 +1,5 @@
 frontend/
-# media/
+media/images/profile_pictures/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
