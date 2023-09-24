@@ -35,7 +35,6 @@ services:
     depends_on:
       - postgresql
       - redis
-      - rabbitmq
 
   # frontend:
   #   build:
@@ -62,15 +61,15 @@ services:
     networks:
       - my_network
   
-  rabbitmq:
-    image: rabbitmq:management
-    restart: always
-    container_name: rabbitmq
-    ports:
-      - 5672:5672
-      - 15672:15672
-    networks:
-      - my_network
+  # rabbitmq:
+  #   image: rabbitmq:management
+  #   restart: always
+  #   container_name: rabbitmq
+  #   ports:
+  #     - 5672:5672
+  #     - 15672:15672
+  #   networks:
+  #     - my_network
 
   redis:
     image: redis

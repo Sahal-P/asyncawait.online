@@ -39,13 +39,13 @@ class UserConnection(AsyncWebsocketConsumer):
             },
         )
         
-    async def send_notification(self, event):
-        print('UserConnection COnsumer !!!!!!!!!!!!!!!!!!!!!!!')
+    async def send_notification(self, event):        
         await self.send(
             text_data=json.dumps(
                 {
-                    "message_type": "notify",
+                    "message_type": NOTIFICATION["NEW_MESSAGE"],
                     "content": event['message'],
+                    "sender": event['sender'],
                 }
             )
         )

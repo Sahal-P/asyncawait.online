@@ -30,6 +30,7 @@ MESSAGE_TYPE = {
     "MESSAGE_DELETE_FOR_ME": "MESSAGE_DELETE_FOR_ME",
     "MESSAGE_DELETE_FOR_EVERYONE": "MESSAGE_DELETE_FOR_EVERYONE",
     "ERROR_OCCURED": "ERROR_OCCURED",
+    "MESSAGE_NOTIFICATION": "MESSAGE_NOTIFICATION",
 }
 
 
@@ -48,10 +49,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         content = text_data_json.get("content")
         msg_type = text_data_json.get("type")
         sender = text_data_json.get("sender")
+        reciever = text_data_json.get("reciever")
         timestampe = text_data_json.get("timestampe")
         # Handle received data
         if msg_type == MESSAGE_TYPE["TEXT_MESSAGE"]:
-            send_websocket_notification.delay(sender, content)
+            send_websocket_notification.delay(reciever, content, sender)
             message_id = uuid.UUID(text_data_json.get("id"))
             # message_id = uuid.uuid4()
             id = text_data_json.get("id")
@@ -70,6 +72,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             
         elif msg_type == MESSAGE_TYPE["MESSAGE_READED"]:
             id = text_data_json.get("id")
+            await self.save_message_status(msg_type, id)
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -78,7 +81,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "sender": sender,
                 },
             )
-            await self.save_message_status(msg_type, id)
             
         elif msg_type == MESSAGE_TYPE["MESSAGE_DELIVERD"]:
             
@@ -131,8 +133,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(
             text_data=json.dumps(
                 {
-                    "message_type": "notify",
+                    "message_type": MESSAGE_TYPE["MESSAGE_NOTIFICATION"],
                     "content": event['message'],
+                    "sender": event['sender'],
                 }
             )
         )

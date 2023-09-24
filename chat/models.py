@@ -100,12 +100,18 @@ class MediaMessage(Message):
 
 
 class Notification(models.Model):
+    MSG_TYPE_CHOICES = [
+        ("TEXT", "Text"),
+        ("AUDIO", "Audio"),
+        ("VIDEO", "Video"),
+        ("IMAGE", "Image"),
+    ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifications"
     )
     sender = models.CharField(max_length=200, null=True, blank=True)
     message = models.TextField()
-    message_type = models.TextField()
+    message_type = models.CharField(choices=MSG_TYPE_CHOICES, default="Text")
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
