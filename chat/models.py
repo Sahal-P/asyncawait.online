@@ -39,17 +39,30 @@ class UserProfile(models.Model):
         ("OFFLINE", "Offline"),
         ("ONLINE", "Online"),
     ]
+    AVATAR_CHOICES = [
+        ( "images/avatar/default_avatar_1.png","default"),
+        ("images/avatar/1.png", "1"),
+        ("images/avatar/2.png", "2"),
+        ("images/avatar/3.png", "3"),
+        ("images/avatar/4.png", "4"),
+        ("images/avatar/5.png", "5"),
+        ("images/avatar/6.png", "6"),
+        ("images/avatar/7.png", "7"),
+        ("images/avatar/8.png", "8"),
+        ("images/avatar/9.png", "9"),
+    ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     profile_picture = models.ImageField(
-        upload_to="images/profile_pictures", blank=True, null=True
+        upload_to="images/profile_pictures", null=True, blank=True
     )
+    picture_blurhash = models.CharField(max_length=200, null=True, blank=True)
     default_avatar = models.CharField(
-        default="images/profile_pictures", blank=True, null=True
+      choices=AVATAR_CHOICES, default="images/avatar/default_avatar_1.png", null=True, blank=True
     )
-    username = models.CharField(max_length=100, blank=True, null=True)
-    about = models.CharField(max_length=200, blank=True, null=True)
+    username = models.CharField(max_length=100, null=True, blank=True)
+    about = models.CharField(max_length=200, null=True, blank=True)
     
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="OFFLINE")
+    status = models.CharField(choices=STATUS_CHOICES, default="OFFLINE")
     last_seen = models.DateTimeField(null=True, blank=True)
 
 
@@ -87,10 +100,18 @@ class MediaMessage(Message):
 
 
 class Notification(models.Model):
+    MSG_TYPE_CHOICES = [
+        ("TEXT", "Text"),
+        ("AUDIO", "Audio"),
+        ("VIDEO", "Video"),
+        ("IMAGE", "Image"),
+    ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="notifications"
     )
+    sender = models.CharField(max_length=200, null=True, blank=True)
     message = models.TextField()
+    message_type = models.CharField(choices=MSG_TYPE_CHOICES, default="Text")
     timestamp = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)

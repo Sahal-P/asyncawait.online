@@ -7,7 +7,7 @@ from .models import Chat, MediaMessage, Message, UserProfile
 from account.models import User
 import uuid
 from account.uuid_serializer import UUID, UUIDEncoder
-
+from notification.tasks import send_websocket_notification
 MESSAGE_MAX_LENGTH = 100
 
 MESSAGE_ERROR_TYPE = {
@@ -30,6 +30,7 @@ MESSAGE_TYPE = {
     "MESSAGE_DELETE_FOR_ME": "MESSAGE_DELETE_FOR_ME",
     "MESSAGE_DELETE_FOR_EVERYONE": "MESSAGE_DELETE_FOR_EVERYONE",
     "ERROR_OCCURED": "ERROR_OCCURED",
+    "MESSAGE_NOTIFICATION": "MESSAGE_NOTIFICATION",
 }
 
 
@@ -37,7 +38,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     
     async def connect(self):
         self.room_group_name = self.scope["url_route"]["kwargs"]["room_name"]
-        print(self.channel_name)
+        print(self.room_group_name, 'chat_id')
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
         self.chat = await self.get_chat_obj(self.room_group_name)
@@ -48,12 +49,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         content = text_data_json.get("content")
         msg_type = text_data_json.get("type")
         sender = text_data_json.get("sender")
+        reciever = text_data_json.get("reciever")
         timestampe = text_data_json.get("timestampe")
         # Handle received data
         if msg_type == MESSAGE_TYPE["TEXT_MESSAGE"]:
+            send_websocket_notification.delay(reciever, content, sender)
             message_id = uuid.UUID(text_data_json.get("id"))
             # message_id = uuid.uuid4()
             id = text_data_json.get("id")
+            await self.save_text_message(text_data_json, message_id)
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -65,10 +69,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     # "temp_id":temp_id,
                 },
             )
-            await self.save_text_message(text_data_json, message_id)
             
         elif msg_type == MESSAGE_TYPE["MESSAGE_READED"]:
             id = text_data_json.get("id")
+            await self.save_message_status(msg_type, id)
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -77,7 +81,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "sender": sender,
                 },
             )
-            # await self.save_message_status(msg_type, content)
             
         elif msg_type == MESSAGE_TYPE["MESSAGE_DELIVERD"]:
             
@@ -89,8 +92,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     "sender": sender,
                 },
             )
-            # await self.save_message_status(msg_type, content)
-
+        
     async def chat_message(self, event):
         await self.send(
             text_data=json.dumps(
@@ -127,15 +129,34 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
         )
+    async def send_notification(self, event):        
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "message_type": MESSAGE_TYPE["MESSAGE_NOTIFICATION"],
+                    "content": event['message'],
+                    "sender": event['sender'],
+                }
+            )
+        )
 
     async def disconnect(self, code):
-        # self.set_offline()
+        self.chat = None
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-
+        
+    @database_sync_to_async
+    def save_message_status(self, msg_type, id ):
+        if "MESSAGE_READED" == MESSAGE_TYPE[msg_type]:
+            status = "SEEN"
+        if "MESSAGE_DELIVERD" == MESSAGE_TYPE[msg_type]:
+            status = "DELIVERED"
+        msg = Message.objects.get(id=id)
+        msg.status=status
+        msg.save()
+        
     @database_sync_to_async
     def save_text_message(self, message, message_id):
         dt_timestamp = datetime.strptime(message["timestampe"], "%Y-%m-%d %H:%M:%S.%f")
-        print(dt_timestamp,'@@@@@@@@@@@@@@@@@@@@@@@@@@@@',message["timestampe"])
         sender = User.objects.get(id=message["sender"])
         obj = Message.objects.create(
             id=message_id,

@@ -20,7 +20,7 @@ class APITestCase(TestCase):
         data = {
             "username": "newuser",
             "email": "newuser@gmail.com",
-            "phone_number": "9876543210",
+            "phone_number": "+919876543210",
             "password": "newpassword",
             "confirm_password": "newpassword",
         }

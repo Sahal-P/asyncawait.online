@@ -66,19 +66,21 @@ class RegisterApiView(APIView):
         if "phone_number" not in data:
             raise exceptions.ValidationError("Phone number is required")
         phone_number = data.get("phone_number")
-        try:
-            parsed_number = phonenumbers.parse(phone_number, None)
-            if not phonenumbers.is_valid_number(parsed_number):
-                raise exceptions.ValidationError("Invalid phone number format")
-            formatted_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
-            return formatted_number
+        return phone_number
+        # try:
+        #     parsed_number = phonenumbers.parse(phone_number, None)
+        #     if not phonenumbers.is_valid_number(parsed_number):
+        #         raise exceptions.ValidationError("Invalid phone number format")
+        #     formatted_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
+        #     return formatted_number
             
-        except phonenumbers.NumberParseException:
-            raise exceptions.ValidationError("Invalid phone number format")
-        except:
-            raise exceptions.ValidationError("Error Ocuured During The Validation of Phone Number")
+        # except phonenumbers.NumberParseException:
+        #     raise exceptions.ValidationError("Invalid phone number format")
+        # except:
+        #     raise exceptions.ValidationError("Error Ocuured During The Validation of Phone Number")
             
 
+from chat.types import AVATAR_CHOICES
 
 class CreateProfileApiView(APIView):
     """
@@ -91,30 +93,34 @@ class CreateProfileApiView(APIView):
 
     def post(self, request):
         # Extract and validate data from the request 
-        print(request.data)
         data, user = self._get_validated_data(request.data)
-        print(data)
+        # data.add(user)
+        
         # Creates a new user instance
-        serializer = self.serializer_class(data=data)
+        serializer = self.serializer_class(user.profile, data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         print(serializer.data)
-                
+        response = self._get_response(user)
         # Craft and return a response with appropriate status code
-        return Response(None, status=status.HTTP_201_CREATED)
+        return response
     
     def _get_validated_data(self, data):
         # Validate passwords and phone number presence
-        self._validate_profile(data)
+        data = self._validate_profile_avatar(data)
         self._validate_username(data)
         self._validate_about(data)
         user = self._get_registerd_user(data)
+        return data , user
     
-        return data, user
-    
-    def _validate_profile(self, data):
+    def _validate_profile_avatar(self, data):
         # Ensure that password and confirm_password match
-        pass
+        mutable_data = data.copy()
+        if "default_avatar" in data:
+            path = AVATAR_CHOICES.get(mutable_data["default_avatar"])
+            if path:
+                mutable_data["default_avatar"] = path
+        return mutable_data
     
     def _validate_about(self, data):
         # Ensure that email is present in the data
@@ -137,9 +143,12 @@ class CreateProfileApiView(APIView):
         if "username" not in data:
             raise exceptions.ValidationError("Username is required")
                 
-   
-
-
+    def _get_response(self, user):
+        response = Response(status=status.HTTP_201_CREATED)
+        serialized = LoginSerializer(user)
+        response.data = serialized.data
+        return response
+    
 class LoginApiView(APIView):
     """
     API view  for user login

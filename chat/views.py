@@ -16,7 +16,7 @@ from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_headers
-
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +40,11 @@ class MessageUnknownAPIView(views.APIView):
     def post(self, request):
         
         data = self._validate_data(request.data)
-        user = self._get_requested_user(request.user.id)
+        user = request.user
         second_user = self._get_requested_user(data["id"])
         self._validate_chat_participants(user, second_user)
         data = self._create_chat(user, second_user)
-        return Response(status=status.HTTP_200_OK, data=data)
+        return Response(data=data, status=status.HTTP_200_OK)
     
     def _validate_data(self, data):
         serialized_data = MessageUnknownSerializer(data=data)
@@ -69,23 +69,30 @@ class MessageUnknownAPIView(views.APIView):
     
     def _create_chat(self, user, second_user):
         try:
-            chat = Chat.objects.create(is_group_chat=False)
-            chat.participants.add(user)
-            chat.participants.add(second_user)
-            chat.full_clean()
-            chat.save()
-            return self._get_contacts(user, second_user)
+            # Used Django transaction to ensure atomicity
+            with transaction.atomic():
+                chat = Chat.objects.create(is_group_chat=False)
+                chat.participants.add(user)
+                chat.participants.add(second_user)
+                chat.full_clean()
+                chat.save()
+                return self._get_contacts(user, second_user)
         except Exception as e:
             # Handle the exception as needed
             raise exceptions.APIException(f"Error Creating Chat: {str(e)}")
         
     def _get_contacts(self, user, second_user):
+        print('first here--------------------',second_user.profile.id)
+        
         contact = Contacts.objects.create(
             user=user, contact=second_user, is_accepted=True
         )
+        print('then here--------------------')
+        
         serialized_data = ContactsSerializer(contact)
         return serialized_data.data
-    
+        
+        
 class GetChatIDAPIView(views.APIView):
     authentication_classes = [JWTAuthentication]
 
