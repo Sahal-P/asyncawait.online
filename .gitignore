@@ -10,3 +10,4 @@ media/images/profile_pictures/
 *.njsproj
 *.sln
 *.sw?
+.env

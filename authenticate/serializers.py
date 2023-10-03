@@ -15,7 +15,7 @@ class CreateProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = "__all__"
-        read_only_fields = ( "id", "last_seen", "status" )
+        read_only_fields = ( "id", "last_seen", "status", "is_online" )
         
     def create(self, validated_data):
         # When creating a new profile, associate it with the user specified in the request

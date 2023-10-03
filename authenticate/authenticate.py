@@ -4,6 +4,7 @@ from rest_framework import exceptions
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template.loader import get_template
 from django.conf import settings
+from decouple import config
 
 from rest_framework.authentication import get_authorization_header, BaseAuthentication
 
@@ -13,50 +14,29 @@ class JWTAuthentication(BaseAuthentication):
         # token = request.COOKIES.get("access_token")
         auth = get_authorization_header(request).split()
         if auth and len(auth)==2:
-            token = auth[1].decode("utf-8")
+            token = auth[1].decode(config("HEADER_ENCODED"))
             user = get_user(token)
             return (user, None)
         raise exceptions.AuthenticationFailed("unauthenticated")
 
 
-class AdminAuthPermission(BaseAuthentication):
-    def authenticate(self, request):
-        auth = get_authorization_header(request).split()
-        token = auth[1].decode("utf-8")
-        token = request.COOKIES.get("admin_access_token")
-        print(request)
-        # if auth and len(auth)==2:
-        if token:
-            # token = auth[1].decode('utf-8')
-            user = get_user(token)
-            return (user, None)
-
-        raise exceptions.AuthenticationFailed("unauthenticated")
-
-
-def create_access_token(id, admin=False):
-    if admin:
-        secret = "admin_secret"
-    else:
-        secret = "access_secret"
+def create_access_token(id):
+    secret = config("ACCESS_SECRET")
     return jwt.encode(
         {
             "user_id": id,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=1),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=config("ACCESS_TOKEN_TIME", cast=int)),
             "iat": datetime.datetime.utcnow(),
         },
         secret,
-        algorithm="HS256",
+        algorithm=config("JWT_ALGORITHM"),
     )
 
 
-def decode_access_token(token, admin=False):
-    if admin:
-        secret = "admin_secret"
-    else:
-        secret = "access_secret"
+def decode_access_token(token):
+    secret = config("ACCESS_SECRET")
     try:
-        payload = jwt.decode(token, secret, algorithms="HS256")
+        payload = jwt.decode(token, secret, algorithms=config("JWT_ALGORITHM"))
 
         return payload["user_id"]
     except Exception as e:
@@ -64,13 +44,10 @@ def decode_access_token(token, admin=False):
         raise exceptions.AuthenticationFailed("unauthenticated")
 
 
-def decode_refresh_token(token, admin=False):
-    if admin:
-        secret = "admin_refresh"
-    else:
-        secret = "refresh_secret"
+def decode_refresh_token(token):
+    secret = config("REFRESH_SECRET")
     try:
-        payload = jwt.decode(token, secret, algorithms="HS256")
+        payload = jwt.decode(token, secret, algorithms=config("JWT_ALGORITHM"))
 
         return payload["user_id"]
     except Exception as e:
@@ -78,24 +55,21 @@ def decode_refresh_token(token, admin=False):
         raise exceptions.AuthenticationFailed("unauthenticated")
 
 
-def create_refresh_token(id, admin=False):
-    if admin:
-        secret = "admin_refresh"
-    else:
-        secret = "refresh_secret"
+def create_refresh_token(id):
+    secret = config("REFRESH_SECRET")
     return jwt.encode(
         {
             "user_id": id,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(days=config("REFRESH_TOKEN_TIME", cast=int)),
             "iat": datetime.datetime.utcnow(),
         },
         secret,
-        algorithm="HS256",
+        algorithm=config("JWT_ALGORITHM"),
     )
 
 
-def get_user(token, is_admin=False):
-    id = decode_access_token(token, is_admin)
+def get_user(token):
+    id = decode_access_token(token)
     try:
         user = User.objects.get(pk=id)
         return user
@@ -105,7 +79,7 @@ def get_user(token, is_admin=False):
 
 def send_email(email, token, mail_type):
     if mail_type == "rest_password":
-        url = "http://localhost:3001/reset/" + token
+        url = config("RESET_EMAIL_URL") + token
         context = {"url": url}
         template = get_template("email.html").render(context)
         msg = EmailMultiAlternatives(
