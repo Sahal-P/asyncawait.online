@@ -28,8 +28,8 @@ class UsersAPIView(generics.GenericAPIView):
     authentication_classes = [JWTAuthentication]
     serializer_class = UserProfileDetailsSerializer
     
-    @method_decorator(cache_page(60 * 15, key_prefix="UsersAPIVIEW"))
-    @method_decorator(vary_on_headers("Authorization"))
+    # @method_decorator(cache_page(60 * 15, key_prefix="UsersAPIVIEW"))
+    # @method_decorator(vary_on_headers("Authorization"))
     def get(self, request):
         
         users = self._get_users(request.user.id)

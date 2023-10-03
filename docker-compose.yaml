@@ -5,26 +5,11 @@ networks:
     driver: bridge
 
 services:
-  # nginx:
-  #   image: nginx
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-  #     - ./nginx/ssl:/etc/nginx/ssl:ro
-  #     - ./frontend/dist:/var/www/frontend
-  #   restart: unless-stopped
-  #   ports:
-  #     - 80:80
-  #     - 443:443
-  #   networks:
-  #     - my_network
-  #   depends_on:
-  #     - web
-  #     - frontend
-  web:
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    command: python manage.py runserver 0.0.0.0:8000
+    command: /app/start.sh
     volumes:
       - .:/app
     restart: always
@@ -35,16 +20,15 @@ services:
     depends_on:
       - postgresql
       - redis
-
+    # deploy:
+    #   replicas: 3  # Set the desired number of replicas
+    
   # frontend:
   #   build:
   #     context: ./frontend
+  #     dockerfile: Dockerfile
   #   volumes:
-  #     - ./frontend/dist:/frontend/dist
-
-  #   restart: always
-  #   networks:
-  #     - my_network
+  #     - frontend:/app/frontend/dist
   #   ports:
   #     - 3000:3000
 
@@ -75,21 +59,41 @@ services:
     image: redis
     ports:
       - "6379:6379"
+    volumes:
+    - redis_data:/data
+    restart: always
     networks:
       - my_network
 
   worker:
     restart: always
     build: .
-    command: celery -A watsapp_backend worker -l INFO -B
-    volumes:
-      - .:/app
-
+    command: /app/worker.sh
     depends_on:
-      - web
       - redis
+      - postgresql
     networks:
       - my_network
+      
+  # nginx:
+  #   build:
+  #     context: ./nginx
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+  #     - ./nginx/ssl:/etc/nginx/ssl:ro
+  #     - ./frontend/dist:/var/www/frontend
+  #   restart: unless-stopped
+  #   ports:
+  #     - 80:80
+  #     - 443:443
+  #   networks:
+  #     - my_network
+  #   depends_on:
+  #     - backend
+  #     - frontend
 
 volumes:
   postgresql_data:
+  redis_data:
+  # frontend:

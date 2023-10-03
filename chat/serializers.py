@@ -17,16 +17,8 @@ class ContactsSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Contacts
-        fields = (
-            "id",
-            "user",
-            "contact",
-            "is_favorite",
-            "is_accepted",
-            "is_blocked",
-            "created_at",
-        )
-        read_only_fields = ("id", "created_at")
+        fields = "__all__"
+        read_only_fields = ("id", "created_at","last_activity_type","last_activity","unread_count","last_activity_time")
 
 
 class MessageUnknownSerializer(serializers.ModelSerializer):
@@ -50,3 +42,11 @@ class MessageDetailsSerislizer(serializers.ModelSerializer):
         model = Message
         fields = "__all__"
         read_only_fields = ("id",)
+
+class ContactDetailsSerislizer(serializers.ModelSerializer):
+    # id = serializers.UUIDField(write_only=True)
+    contact_id = serializers.CharField()
+    count = serializers.IntegerField()
+    class Meta:
+        model = Message
+        fields = ("id","content","timestampe","status","is_read","contact_id", "count")

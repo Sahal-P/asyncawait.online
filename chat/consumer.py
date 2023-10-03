@@ -8,6 +8,7 @@ from account.models import User
 import uuid
 from account.uuid_serializer import UUID, UUIDEncoder
 from notification.tasks import send_websocket_notification
+
 MESSAGE_MAX_LENGTH = 100
 
 MESSAGE_ERROR_TYPE = {
@@ -31,6 +32,7 @@ MESSAGE_TYPE = {
     "MESSAGE_DELETE_FOR_EVERYONE": "MESSAGE_DELETE_FOR_EVERYONE",
     "ERROR_OCCURED": "ERROR_OCCURED",
     "MESSAGE_NOTIFICATION": "MESSAGE_NOTIFICATION",
+    "USER_LEFT": "USER_LEFT",
 }
 
 
@@ -53,7 +55,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         timestampe = text_data_json.get("timestampe")
         # Handle received data
         if msg_type == MESSAGE_TYPE["TEXT_MESSAGE"]:
-            send_websocket_notification.delay(reciever, content, sender)
+            send_websocket_notification.delay(reciever, content, sender, timestampe)
             message_id = uuid.UUID(text_data_json.get("id"))
             # message_id = uuid.uuid4()
             id = text_data_json.get("id")
@@ -141,8 +143,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def disconnect(self, code):
+        await self.channel_layer.group_send(
+                self.room_group_name,
+                { 'type': 'user_left_notify' }
+                )
+        
         self.chat = None
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
+        
+    async def user_left_notify(self, event):        
+        await self.send(text_data=json.dumps({
+            'message_type': MESSAGE_TYPE["USER_LEFT"],
+            'message': 'User has left the room.'
+        }))
         
     @database_sync_to_async
     def save_message_status(self, msg_type, id ):

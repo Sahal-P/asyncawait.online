@@ -14,8 +14,11 @@ from .authenticate import (
     JWTAuthentication,
     send_email,
 )
+import json
 import pyotp
 import phonenumbers
+from .service import compres_profile_picture
+
 
 
 class RegisterApiView(APIView):
@@ -31,11 +34,13 @@ class RegisterApiView(APIView):
         data = self._get_validated_data(request.data)
         print(data)
         # Creates a new user instance
+        
         serializer = UserSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
                 
         # Craft and return a response with appropriate status code
+        # return Response(data=None, status=status.HTTP_201_CREATED)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     def _get_validated_data(self, data):
@@ -82,6 +87,7 @@ class RegisterApiView(APIView):
 
 from chat.types import AVATAR_CHOICES
 
+
 class CreateProfileApiView(APIView):
     """
     API view  for user registration
@@ -95,7 +101,7 @@ class CreateProfileApiView(APIView):
         # Extract and validate data from the request 
         data, user = self._get_validated_data(request.data)
         # data.add(user)
-        
+        print(data, user)
         # Creates a new user instance
         serializer = self.serializer_class(user.profile, data=data)
         serializer.is_valid(raise_exception=True)
@@ -103,6 +109,7 @@ class CreateProfileApiView(APIView):
         print(serializer.data)
         response = self._get_response(user)
         # Craft and return a response with appropriate status code
+        # return Response(data=None, status=status.HTTP_201_CREATED)
         return response
     
     def _get_validated_data(self, data):
@@ -120,7 +127,10 @@ class CreateProfileApiView(APIView):
             path = AVATAR_CHOICES.get(mutable_data["default_avatar"])
             if path:
                 mutable_data["default_avatar"] = path
+        if "profile_picture" in data:
+            mutable_data = compres_profile_picture(mutable_data)
         return mutable_data
+    
     
     def _validate_about(self, data):
         # Ensure that email is present in the data
@@ -279,9 +289,8 @@ class TwoFactorAPIView(APIView):
 
 class RefreshAPIView(APIView):
     def post(self, request):
-        is_admin = request.data["token"]
-        print(is_admin)
-        refresh_token = request.COOKIES.get("refresh_token")
+        refresh_token = request.data["token"]
+        print(refresh_token)
         id = decode_refresh_token(refresh_token)
         print(id)
         if not UserToken.objects.filter(

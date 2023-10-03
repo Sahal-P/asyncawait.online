@@ -11,12 +11,16 @@ from .serializers import (
     MessageUnknownSerializer,
     GetChatDetailsSerializer,
     MessageDetailsSerislizer,
+    ContactDetailsSerislizer,
 )
 from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_headers
 from django.db import transaction
+from watsapp_backend.exceptions import ConflictError
+from django.db.models import Count, Q, Max
+
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +60,7 @@ class MessageUnknownAPIView(views.APIView):
         try:
             return User.objects.get(id=id)
         except User.DoesNotExist:
-            raise exceptions.NotFound("Requested user not found.")
+            raise exceptions.ParseError("Requested user not found.")
     
     def _validate_chat_participants(self, user, unknown_user):
         chat = (
@@ -65,7 +69,7 @@ class MessageUnknownAPIView(views.APIView):
             .exists()
         )
         if chat:
-            raise exceptions.APIException("participents already exits")
+            raise ConflictError("participents already exits")
     
     def _create_chat(self, user, second_user):
         try:
@@ -81,14 +85,10 @@ class MessageUnknownAPIView(views.APIView):
             # Handle the exception as needed
             raise exceptions.APIException(f"Error Creating Chat: {str(e)}")
         
-    def _get_contacts(self, user, second_user):
-        print('first here--------------------',second_user.profile.id)
-        
+    def _get_contacts(self, user, second_user):        
         contact = Contacts.objects.create(
             user=user, contact=second_user, is_accepted=True
-        )
-        print('then here--------------------')
-        
+        )        
         serialized_data = ContactsSerializer(contact)
         return serialized_data.data
         
@@ -143,3 +143,34 @@ class GetChatDetailsAPIView(views.APIView):
         serialized_data = ChatSerializer(chat)
         data = {"chat": serialized_data.data, "message": message_serialized_data.data}
         return Response(status=status.HTTP_200_OK, data=data)
+
+
+class SetMessageStatusAPIView(views.APIView):
+    
+    def post(self, request):
+        print(request.data)
+        message_id = request.data['message_ids']
+        Message.objects.filter(id__in=message_id).update(status="SEEN", is_read=True)
+        return Response(None)
+    
+    
+class GetContactDetailsAPIView(views.APIView):
+    authentication_classes = [JWTAuthentication]
+    
+    def post(self, request):
+        user = request.user
+        chat_user_id = request.data["id"]
+        chat_user = User.objects.get(id=chat_user_id)
+        chat = (
+            Chat.objects.filter(participants=user, is_group_chat=False)
+            .filter(participants=chat_user)
+            .first()
+        )
+        message = Message.objects.filter(chat=chat).order_by("-timestampe").first()
+        count = Message.objects.filter(chat=chat, status__in=["PENDING", "SENT", "DELIVERED"]).count()
+        print(message, count)
+        message.count = count
+        message.contact_id = chat_user_id
+        serialized_data = ContactDetailsSerislizer(message)
+    
+        return Response(data=serialized_data.data)

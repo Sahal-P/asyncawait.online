@@ -1,11 +1,13 @@
 from pathlib import Path
 import os
+from decouple import config
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-gy5h$*cbn#*2r0-p87ixu$69z@5-26bdfw6irwc20fpevlmgx6"
+SECRET_KEY = config('SECRET_KEY')
 
-DEBUG = True
+DEBUG = config('DEBUG', cast=bool)
 
 ALLOWED_HOSTS = ["localhost", "api.asyncawait.dev","asyncawait.dev", "127.0.0.1"]
 
@@ -14,19 +16,20 @@ INTERNAL_IPS = [
 ]
 
 INSTALLED_APPS = [
-    "channels",
     "daphne",
+    "channels",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.staticfiles",
     "corsheaders",
     "rest_framework",
-    "debug_toolbar",
+    # "debug_toolbar",
     "account",
     "chat",
     "authenticate",
     "notification",
+    "storages"
 ]
 
 MIDDLEWARE = [
@@ -34,21 +37,21 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-DEBUG_TOOLBAR_CONFIG = {
-    "SHOW_TOOLBAR_CALLBACK": lambda request: True,
-}
+# DEBUG_TOOLBAR_CONFIG = {
+#     "SHOW_TOOLBAR_CALLBACK": lambda request: True,
+# }
 
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis", 6379)],
+            "hosts": [(config("REDIS_HOST"), config("REDIS_PORT", cast=int))],
         },
     },
 }
@@ -95,12 +98,12 @@ WSGI_APPLICATION = "watsapp_backend.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "Chat",
-        "USER": "sahal",
-        "PASSWORD": "09876",
-        "HOST": "postgresql",
-        # "HOST": "localhost",
-        "PORT": "5432",
+        "NAME": config("DATABASE_NAME"),
+        "USER": config("DATABASE_USER"),
+        "PASSWORD": config("DATABASE_PASSWORD"),
+        "HOST": config("DATABASE_HOST"),
+        # "HOST": config("DATABASE_HOST"),
+        "PORT": config("DATABASE_PORT"),
     }
 }
 
@@ -108,7 +111,7 @@ DATABASES = {
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://redis:6379/1",
+        "LOCATION": config("REDIS_CACHE_LOCATION"),
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
@@ -150,16 +153,16 @@ AUTH_USER_MODEL = "account.User"
 
 LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'Asia/Kolkata'
+TIME_ZONE = config("TIME_ZONE")
 
 USE_I18N = True
 
 USE_TZ = True
 
 
-STATIC_URL = "static/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
-MEDIA_URL = "/media/"
+STATIC_URL = config("STATIC_URL")
+MEDIA_ROOT = os.path.join(BASE_DIR, config("MEDIA_ROOT"))
+MEDIA_URL = config("MEDIA_URL")
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -167,9 +170,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = [
-    "http://localhost:3001",
-    # "https://asyncawait.dev",
-    # "https://api.asyncawait.dev"
+    config("CORS_ORIGIN_WHITELIST_1"),
+    config("CORS_ORIGIN_WHITELIST_2"),
 ]
 
 CORS_ALLOW_METHODS = [
@@ -182,9 +184,8 @@ CORS_ALLOW_METHODS = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3001",
-    # "https://asyncawait.dev",
-    # "https://api.asyncawait.dev"
+    config("CORS_ALLOWED_ORIGINS_1"),
+    config("CORS_ALLOWED_ORIGINS_2"),
 ]
 
 CORS_ALLOW_HEADERS = [
@@ -195,13 +196,17 @@ CORS_ALLOW_HEADERS = [
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_BROKER_URL = config("CELERY_BROKER_URL")
 # CELERY_BROKER_URL = "amqp://guest:guest@rabbitmq:5672/"
-CELERY_RESULT_BACKEND = "redis://redis:6379/0"
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND")
 
 # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # SESSION_COOKIE_DOMAIN = 'https://api.asyncawait.dev'
 
+USE_S3=config("USE_S3", cast=bool)
+
+if USE_S3:
+    pass
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

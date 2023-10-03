@@ -1,6 +1,9 @@
 psycopg2-binary
 channels_redis
+django-storages[s3]
 Pillow
+gunicorn 
+uvicorn
 daphne
 Django
 django-cors-headers
@@ -16,4 +19,5 @@ django-redis
 django-debug-toolbar
 phonenumbers
 celery[redis]
-flower
+python-decouple
+boto3

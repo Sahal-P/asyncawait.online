@@ -2,6 +2,8 @@ from django.db import models
 from account.models import User
 from datetime import datetime
 import uuid
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 
 class Chat(models.Model):
@@ -30,6 +32,8 @@ class Message(models.Model):
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
     is_read = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    is_deleted_for_me = models.BooleanField(default=False)
     is_archived = models.BooleanField(default=False)
 
 
@@ -63,10 +67,18 @@ class UserProfile(models.Model):
     about = models.CharField(max_length=200, null=True, blank=True)
     
     status = models.CharField(choices=STATUS_CHOICES, default="OFFLINE")
+    is_online = models.BooleanField(default=False)
     last_seen = models.DateTimeField(null=True, blank=True)
 
 
 class Contacts(models.Model):
+    LAST_ACTIVITY_CHOICES = [
+        ("MESSAGE", "Message"),
+        ("IMAGE", "Image"),
+        ("AUDIO", "Audio"),
+        ("CALL", "Call"),
+        ("NEW", "New"),
+    ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="user_contacts"
@@ -74,9 +86,15 @@ class Contacts(models.Model):
     contact = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="contact_contacts"
     )
+    last_activity_type = models.CharField(choices=LAST_ACTIVITY_CHOICES, default="New")
+    last_activity = models.CharField(max_length=200, null=True, blank=True)
+    last_activity_time = models.DateTimeField(null=True)
+    unread_count = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(100)], default=0)
     is_favorite = models.BooleanField(default=False)
     is_accepted = models.BooleanField(default=False)
+    is_muted = models.BooleanField(default=False)
     is_blocked = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -96,7 +114,16 @@ class Contacts(models.Model):
             )
 
 class MediaMessage(Message):
+    MEDIA_TYPE_CHOICES = [
+        ("DOCUMENT", "Document"),
+        ("AUDIO", "Audio"),
+        ("VIDEO", "Video"),
+        ("IMAGE", "Image"),
+        ("DEFAULT", "None"),
+    ]
     media_file = models.FileField(upload_to="media_messages")
+    media_type = models.CharField(choices=MEDIA_TYPE_CHOICES, default="DEFAULT")
+    image_blurhash = models.CharField(max_length=200, null=True, blank=True)
 
 
 class Notification(models.Model):
@@ -113,5 +140,5 @@ class Notification(models.Model):
     sender = models.CharField(max_length=200, null=True, blank=True)
     message = models.TextField()
     message_type = models.CharField(choices=MSG_TYPE_CHOICES, default="Text")
-    timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField()
     is_read = models.BooleanField(default=False)
