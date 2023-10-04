@@ -3,7 +3,7 @@ channels_redis
 django-storages[s3]
 Pillow
 gunicorn 
-uvicorn
+uvicorn[standard]
 daphne
 Django
 django-cors-headers

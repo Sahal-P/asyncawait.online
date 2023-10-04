@@ -99,15 +99,18 @@ class CreateProfileApiView(APIView):
 
     def post(self, request):
         # Extract and validate data from the request 
-        data, user = self._get_validated_data(request.data)
-        # data.add(user)
-        print(data, user)
-        # Creates a new user instance
-        serializer = self.serializer_class(user.profile, data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        print(serializer.data)
-        response = self._get_response(user)
+        try:
+            data, user = self._get_validated_data(request.data)
+            # data.add(user)
+            print(data, user)
+            # Creates a new user instance
+            serializer = self.serializer_class(user.profile, data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            print(serializer.data)
+            response = self._get_response(user)
+        except Exception as e:
+            print(e)
         # Craft and return a response with appropriate status code
         # return Response(data=None, status=status.HTTP_201_CREATED)
         return response

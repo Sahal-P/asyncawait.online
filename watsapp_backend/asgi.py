@@ -1,6 +1,8 @@
 import os
 from django.core.asgi import get_asgi_application
+import django
 
+django.setup()
 django_asgi_application = get_asgi_application()
 
 from channels.routing import ProtocolTypeRouter, URLRouter
