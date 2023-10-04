@@ -3,7 +3,7 @@ from account.models import User
 from datetime import datetime
 import uuid
 from django.core.validators import MinValueValidator, MaxValueValidator
-
+from watsapp_backend.storage_backends import PublicMediaStorage, PrivateMediaStorage
 
 
 class Chat(models.Model):
@@ -44,7 +44,7 @@ class UserProfile(models.Model):
         ("ONLINE", "Online"),
     ]
     AVATAR_CHOICES = [
-        ( "images/avatar/default_avatar_1.png","default"),
+        ("images/avatar/default_avatar_1.png","default"),
         ("images/avatar/1.png", "1"),
         ("images/avatar/2.png", "2"),
         ("images/avatar/3.png", "3"),
@@ -56,12 +56,14 @@ class UserProfile(models.Model):
         ("images/avatar/9.png", "9"),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    profile_picture = models.ImageField(
-        upload_to="images/profile_pictures", null=True, blank=True
+    
+    profile_picture = models.FileField(upload_to="images/profile_pictures",
+        storage=PublicMediaStorage(), null=True, blank=True
     )
+    
     picture_blurhash = models.CharField(max_length=200, null=True, blank=True)
     default_avatar = models.CharField(
-      choices=AVATAR_CHOICES, default="images/avatar/default_avatar_1.png", null=True, blank=True
+      choices=AVATAR_CHOICES, default="default", null=True, blank=True
     )
     username = models.CharField(max_length=100, null=True, blank=True)
     about = models.CharField(max_length=200, null=True, blank=True)
@@ -121,7 +123,7 @@ class MediaMessage(Message):
         ("IMAGE", "Image"),
         ("DEFAULT", "None"),
     ]
-    media_file = models.FileField(upload_to="media_messages")
+    media_file = models.FileField(upload_to="media_messages", storage=PrivateMediaStorage())
     media_type = models.CharField(choices=MEDIA_TYPE_CHOICES, default="DEFAULT")
     image_blurhash = models.CharField(max_length=200, null=True, blank=True)
 

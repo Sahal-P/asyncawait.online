@@ -16,8 +16,8 @@ INTERNAL_IPS = [
 ]
 
 INSTALLED_APPS = [
-    "daphne",
     "channels",
+    "daphne",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     "chat",
     "authenticate",
     "notification",
-    "storages"
+    "storages",
 ]
 
 MIDDLEWARE = [
@@ -102,7 +102,6 @@ DATABASES = {
         "USER": config("DATABASE_USER"),
         "PASSWORD": config("DATABASE_PASSWORD"),
         "HOST": config("DATABASE_HOST"),
-        # "HOST": config("DATABASE_HOST"),
         "PORT": config("DATABASE_PORT"),
     }
 }
@@ -164,6 +163,33 @@ STATIC_URL = config("STATIC_URL")
 MEDIA_ROOT = os.path.join(BASE_DIR, config("MEDIA_ROOT"))
 MEDIA_URL = config("MEDIA_URL")
 
+USE_S3=config("USE_S3", cast=bool)
+
+if USE_S3:
+    AWS_ACCESS_KEY_ID = config("S3_KEY_ID")
+    AWS_SECRET_ACCESS_KEY = config("S3_SECRET_ACCESS_KEY")
+    AWS_STORAGE_BUCKET_NAME = config("S3_BUCKET_NAME")
+    AWS_S3_REGION_NAME = config("S3_REGION_NAME")
+    AWS_S3_SIGNATURE_NAME = 's3v4'
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_S3_VERITY = True
+    # AWS_S3_ENDPOINT_URL = config("S3_HOST")
+    PUBLIC_MEDIA_LOCATION = 'media'
+    STATICFILES_LOCATION = 'static'
+    STATICFILES_STORAGE = 'watsapp_backend.storage_backend.StaticStorage'
+    AWS_S3_CUSTOM_DOMAIN = f's3.{AWS_S3_REGION_NAME}.amazonaws.com/{AWS_STORAGE_BUCKET_NAME}'
+    # MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}{PUBLIC_MEDIA_LOCATION}/"
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+    DEFAULT_FILE_STORAGE = "watsapp_backend.storage_backend.PublicMediaStorage"
+    
+    PRIVATE_MEDIA_LOCATION = 'private'
+    PRIVATE_FILE_STORAGE = 'watsapp_backend.storage_backend.PrivateMediaStorage'
+else:
+    DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
+    MEDIA_ROOT = os.path.join(BASE_DIR, config("MEDIA_ROOT"))
+    MEDIA_URL = config("MEDIA_URL")
+
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -203,10 +229,8 @@ CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND")
 # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 # SESSION_COOKIE_DOMAIN = 'https://api.asyncawait.dev'
 
-USE_S3=config("USE_S3", cast=bool)
 
-if USE_S3:
-    pass
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
