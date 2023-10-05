@@ -8,6 +8,7 @@ from account.models import User
 import uuid
 from account.uuid_serializer import UUID, UUIDEncoder
 from notification.tasks import send_websocket_notification
+from .tasks import save_message, save_message_status
 
 MESSAGE_MAX_LENGTH = 100
 
@@ -59,7 +60,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             message_id = uuid.UUID(text_data_json.get("id"))
             # message_id = uuid.uuid4()
             id = text_data_json.get("id")
-            await self.save_text_message(text_data_json, message_id)
+            # await self.save_text_message(text_data_json, message_id)
+            save_message.delay(self.chat, text_data_json, message_id)
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -74,7 +76,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             
         elif msg_type == MESSAGE_TYPE["MESSAGE_READED"]:
             id = text_data_json.get("id")
-            await self.save_message_status(msg_type, id)
+            # await self.save_message_status(msg_type, id)
+            save_message_status.delay(msg_type, id)
+            
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {

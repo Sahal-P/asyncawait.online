@@ -12,13 +12,18 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app
 WORKDIR /app
 
-EXPOSE 8000
 
-# RUN sed -i 's/\r$//g' /app/start.sh
+COPY ./start.sh .
+RUN chmod +x /app/start.sh
+COPY ./worker.sh .
+RUN chmod +x /app/worker.sh 
+
+RUN sed -i 's/\r$//g' /app/start.sh
 # RUN chmod +x /app/
-
-# RUN sed -i 's/\r$//g' /app/celery/worker/start.sh
+RUN sed -i 's/\r$//g' /app/worker.sh
 # RUN chmod +x /app/celery/worker/
+
+EXPOSE 8000
 
 # COPY ./entrypoint.sh .
 # ENTRYPOINT [ "sh", "/app/entrypoint.sh" ]
