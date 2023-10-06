@@ -70,6 +70,15 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.AllowAny",
     ],
     "EXCEPTION_HANDLER": "watsapp_backend.exceptions.status_code_handler",
+    
+     'DEFAULT_THROTTLE_CLASSES': [
+        'watsapp_backend.throttles.LoginRateThrottle',
+        'watsapp_backend.throttles.RegisterRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'login_rate': '10/day',
+        'register_rate': '5/day',
+    }
 }
 
 ROOT_URLCONF = "watsapp_backend.urls"
