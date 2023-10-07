@@ -131,17 +131,6 @@ SESSION_CACHE_ALIAS = "default"
 
 CACHE_TTL = 60 * 1
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-#         'NAME': 'db.sqlite3',                      # Or path to database file if using sqlite3.
-#         'USER': '',                      # Not used with sqlite3.
-#         'PASSWORD': '',                  # Not used with sqlite3.
-#         'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-#         'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
-#     }
-# }
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
@@ -232,7 +221,6 @@ CORS_ALLOW_HEADERS = [
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 CELERY_BROKER_URL = config("CELERY_BROKER_URL")
-# CELERY_BROKER_URL = "amqp://guest:guest@rabbitmq:5672/"
 CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND")
 
 # SECURE_HSTS_INCLUDE_SUBDOMAINS = True
