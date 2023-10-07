@@ -21,5 +21,5 @@ def send_websocket_notification(reciever,message,sender,timestampe):
         user_id=reciever,
         sender=sender,
         message=message,
-        timestampe=timestampe
+        timestamp=timestampe
     )

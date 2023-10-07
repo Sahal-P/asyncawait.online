@@ -5,6 +5,8 @@ from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template.loader import get_template
 from django.conf import settings
 from decouple import config
+import phonenumbers
+
 
 from rest_framework.authentication import get_authorization_header, BaseAuthentication
 
@@ -94,3 +96,16 @@ def send_email(email, token, mail_type):
         send_mail(
             "test mail", "hi", "settings.EMAIL_HOST_USER", [email], fail_silently=False
         )
+
+
+def verify_phone_number(phone_number):
+    try:
+        parsed_number = phonenumbers.parse(phone_number, None)
+        if not phonenumbers.is_valid_number(parsed_number):
+            raise exceptions.ValidationError("Invalid phone number format")
+        formatted_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
+        return formatted_number
+    except phonenumbers.NumberParseException:
+        raise exceptions.ValidationError("Invalid phone number format")
+    except Exception as e:
+        raise exceptions.ValidationError("Error Ocuured During The Validation of Phone Number")

@@ -34,7 +34,9 @@ class MessageUnknownAPIView(views.APIView):
 
     Attributes:
         authentication_classes (list): List of authentication classes applied to this view.
-
+    Data: {
+        id: User.id (UUID) -: request user id
+    }
     Returns:
         Response: A response with a serialized contact objects and a status code 200.
     """
@@ -109,6 +111,12 @@ class GetChatIDAPIView(views.APIView):
 
 
 class GetContactsAPIView(views.APIView):
+    """
+    API view for getting Contacts.
+    
+    Method: GET
+    
+    """
     authentication_classes = [JWTAuthentication]
     
     # def dispatch(self, *args, **kwargs):
@@ -117,60 +125,127 @@ class GetContactsAPIView(views.APIView):
     # @method_decorator(cache_page(60 * 60))
     # @method_decorator(vary_on_headers("X-User-Identifier"))
     def get(self, request):
-        user = request.user
-        contacts = Contacts.objects.filter(user=user)
+        try:
+            contacts = Contacts.objects.filter(user=request.user)
+        except Contacts.DoesNotExist:
+            raise exceptions.ValidationError("Contacts Does not Exists")
+        except:
+            raise exceptions.APIException("Somthing Went Wrong while fetching contacts")
+        
         contact_serializer = ContactsSerializer(contacts, many=True)
         return Response(status=status.HTTP_200_OK, data=contact_serializer.data)
 
 
 class GetChatDetailsAPIView(views.APIView):
+    """
+    API view for getting chat details.
+
+    This view handles the scenario where a user wants the chat details (messages || history).
+
+    Attributes:
+        authentication_classes (list): List of authentication classes applied to this view.
+    Data: {
+        id: User.id (UUID) -: request user id
+    }
+    
+    """
     authentication_classes = [JWTAuthentication]
 
     def post(self, request):
         serialized_data = GetChatDetailsSerializer(data=request.data)
-        logger.critical("Error Login user with params: dhfbvjdbdjfbv")
         serialized_data.is_valid(raise_exception=True)
         data = serialized_data.data
         user = request.user
-        chat_user = User.objects.get(id=data["id"])
-        chat = (
-            Chat.objects.filter(participants=user, is_group_chat=False)
-            .filter(participants=chat_user)
-            .first()
-        )
-        message = Message.objects.filter(chat=chat).order_by("timestampe")
-        message_serialized_data = MessageDetailsSerislizer(message, many=True)
-        serialized_data = ChatSerializer(chat)
-        data = {"chat": serialized_data.data, "message": message_serialized_data.data}
+        chat_serialized_data, message_serialized_data = self.get_data(data["id"], user)
+        data = {"chat": chat_serialized_data.data, "message": message_serialized_data.data}
         return Response(status=status.HTTP_200_OK, data=data)
 
-
+    def get_data(self, id, user):
+        try:
+            chat_user = User.objects.get(id=id)
+            chat = (
+                Chat.objects.filter(participants=user, is_group_chat=False)
+                .filter(participants=chat_user)
+                .first()
+            )
+            chat_serialized_data = ChatSerializer(chat)
+            return chat_serialized_data, self._get_messages(chat)
+        except User.DoesNotExist:
+            raise exceptions.ValidationError("User Does Not Exists")
+        except Chat.DoesNotExist:
+            raise exceptions.ValidationError("Chat Does Not Exists")
+        
+    def _get_messages(self, chat):
+        try:
+            message = Message.objects.filter(chat=chat).order_by("timestampe")
+            message_serialized_data = MessageDetailsSerislizer(message, many=True)
+            return message_serialized_data
+        except Message.DoesNotExist:
+            raise exceptions.ValidationError("Message does not exits")
+        
 class SetMessageStatusAPIView(views.APIView):
+    """
+    API view for updating message status.
     
+    Data: {
+        message_ids: [Message.id (UUID) , ...]
+    }
+    
+    """
     def post(self, request):
-        print(request.data)
-        message_id = request.data['message_ids']
-        Message.objects.filter(id__in=message_id).update(status="SEEN", is_read=True)
-        return Response(None)
+        try:
+            message_id = request.data['message_ids']
+            Message.objects.filter(id__in=message_id).update(status="SEEN", is_read=True)
+        except Message.DoesNotExist:
+            exceptions.ParseError("Indvalid Message id")
+        except:
+            exceptions.APIException("Error Updating Message Status")
+        return Response(None, status=status.HTTP_204_NO_CONTENT)
     
     
 class GetContactDetailsAPIView(views.APIView):
+    """
+    API view for getting Contact Details.
+    
+    Data: {
+        ids: User.id (UUID) 
+    }
+    
+    """
     authentication_classes = [JWTAuthentication]
     
     def post(self, request):
         user = request.user
-        chat_user_id = request.data["id"]
-        chat_user = User.objects.get(id=chat_user_id)
-        chat = (
-            Chat.objects.filter(participants=user, is_group_chat=False)
-            .filter(participants=chat_user)
-            .first()
-        )
-        message = Message.objects.filter(chat=chat).order_by("-timestampe").first()
-        count = Message.objects.filter(chat=chat, status__in=["PENDING", "SENT", "DELIVERED"]).count()
-        print(message, count)
-        message.count = count
+        chat_user_id = self._validate_data(request.data)
+        message = self.get_data(chat_user_id, user)
         message.contact_id = chat_user_id
         serialized_data = ContactDetailsSerislizer(message)
+        return Response(data=serialized_data.data, status=status.HTTP_200_OK)
     
-        return Response(data=serialized_data.data)
+    def _validate_data(self, data):
+        if "id" not in data:
+            raise exceptions.ValidationError("User Id is required")
+        return data["id"]
+    
+    def get_data(self, id, user):
+        try:
+            chat_user = User.objects.get(id=id)
+            chat = (
+                Chat.objects.filter(participants=user, is_group_chat=False)
+                .filter(participants=chat_user)
+                .first()
+            )
+            return self._get_message_and_count(chat)
+        except User.DoesNotExist:
+            raise exceptions.ValidationError("User Does Not Exists")
+        except Chat.DoesNotExist:
+            raise exceptions.ValidationError("Chat Does Not Exists")
+        
+    def _get_message_and_count(self, chat):
+        try:
+            message = Message.objects.filter(chat=chat).order_by("-timestampe").first()
+            count = Message.objects.filter(chat=chat, status__in=["PENDING", "SENT", "DELIVERED"]).count()
+            message.count = count
+            return message
+        except Message.DoesNotExist:
+            raise exceptions.ValidationError("Message Does Not Exists")

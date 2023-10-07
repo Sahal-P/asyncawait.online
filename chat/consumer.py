@@ -8,33 +8,12 @@ from account.models import User
 import uuid
 from account.uuid_serializer import UUID, UUIDEncoder
 from notification.tasks import send_websocket_notification
-from .tasks import save_message, save_message_status
+from chat.tasks import save_message, save_message_status
+from chat.types import MESSAGE_ERROR_TYPE, MESSAGE_TYPE
 
 MESSAGE_MAX_LENGTH = 100
 
-MESSAGE_ERROR_TYPE = {
-    "MESSAGE_OUT_OF_LENGTH": "MESSAGE_OUT_OF_LENGTH",
-    "UN_AUTHENTICATED": "UN_AUTHENTICATED",
-    "INVALID_MESSAGE": "INVALID_MESSAGE",
-}
 
-MESSAGE_TYPE = {
-    "WENT_ONLINE": "WENT_ONLINE",
-    "WENT_OFFLINE": "WENT_OFFLINE",
-    "IS_TYPING": "IS_TYPING",
-    "NOT_TYPING": "NOT_TYPING",
-    "MESSAGE_COUNTER": "MESSAGE_COUNTER",
-    "OVERALL_MESSAGE_COUNTER": "OVERALL_MESSAGE_COUNTER",
-    "TEXT_MESSAGE": "TEXT_MESSAGE",
-    "MESSAGE_READED": "MESSAGE_READED",
-    "ALL_MESSAGE_READ": "ALL_MESSAGE_READ",
-    "MESSAGE_DELIVERD": "MESSAGE_DELIVERD",
-    "MESSAGE_DELETE_FOR_ME": "MESSAGE_DELETE_FOR_ME",
-    "MESSAGE_DELETE_FOR_EVERYONE": "MESSAGE_DELETE_FOR_EVERYONE",
-    "ERROR_OCCURED": "ERROR_OCCURED",
-    "MESSAGE_NOTIFICATION": "MESSAGE_NOTIFICATION",
-    "USER_LEFT": "USER_LEFT",
-}
 
 
 class ChatConsumer(AsyncWebsocketConsumer):

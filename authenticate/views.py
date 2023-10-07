@@ -13,11 +13,13 @@ from .authenticate import (
     decode_refresh_token,
     JWTAuthentication,
     send_email,
+    verify_phone_number,
 )
 import json
 import pyotp
-import phonenumbers
 from .service import compres_profile_picture
+from chat.types import AVATAR_CHOICES
+
 
 
 
@@ -25,9 +27,17 @@ class RegisterApiView(APIView):
     """
     API view  for user registration
     Args:
-        APIView (class): A class from the Django Rest Framework for handling HTTP requests.
-            This view extends the base APIView class to handle user registration.
+        APIView (class): This view extends the base APIView class to handle user registration. Throttle limit 5 request per day
+        Method: POST.
+        data: {
+            email: example@gmail.com,
+            phone_number: 000 000 00 00,
+            password: ********,
+            confirm_password: ********,
+        }
     """
+    throttle_classes = "register_rate"
+    
     def post(self, request):
         # Extract and validate data from the request 
         print(request.data)
@@ -71,29 +81,25 @@ class RegisterApiView(APIView):
         if "phone_number" not in data:
             raise exceptions.ValidationError("Phone number is required")
         phone_number = data.get("phone_number")
+        # verified_number = verify_phone_number(phone_number)
         return phone_number
-        # try:
-        #     parsed_number = phonenumbers.parse(phone_number, None)
-        #     if not phonenumbers.is_valid_number(parsed_number):
-        #         raise exceptions.ValidationError("Invalid phone number format")
-        #     formatted_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
-        #     return formatted_number
-            
-        # except phonenumbers.NumberParseException:
-        #     raise exceptions.ValidationError("Invalid phone number format")
-        # except:
-        #     raise exceptions.ValidationError("Error Ocuured During The Validation of Phone Number")
             
 
-from chat.types import AVATAR_CHOICES
 
 
 class CreateProfileApiView(APIView):
     """
-    API view  for user registration
+    API view for creating user profile
     Args:
-        APIView (class): A class from the Django Rest Framework for handling HTTP requests.
-            This view extends the base APIView class to handle user registration.
+        APIView (class): This view extends the base APIView class to handle profile creation.
+        Method: POST.
+        data: {
+            profile_picture: InMemoryUploadedFile, (optional)
+            default_avatar: AVATAR_CHOICE, (optional)
+            username: example_123, (optional)
+            about: hey there, (optional)
+        }
+        
     """
     serializer_class = CreateProfileSerializer
 
@@ -166,9 +172,15 @@ class LoginApiView(APIView):
     """
     API view  for user login
     Args:
-        APIView (class): A class from the Django Rest Framework for handling HTTP requests.
-            This view extends the base APIView class to handle user login.
+        APIView (class): This view extends the base APIView class to handle user login. Throttle limit 10 request per day
+        Method: POST.
+        data: {
+            phone_number: 000 000 00 00,
+            password: ********,
+        }
     """
+    throttle_classes = "login_rate"
+    
     def post(self, request):
         
         user = self._get_validated_data(request.data)
@@ -198,19 +210,8 @@ class LoginApiView(APIView):
         if "phone_number" not in data:
             raise exceptions.ValidationError("Phone number is required")
         phone_number = data.get("phone_number")
+        # verified_number = verify_phone_number(phone_number)
         return phone_number
-        # try:
-        #     parsed_number = phonenumbers.parse(phone_number, None)
-        #     if not phonenumbers.is_valid_number(parsed_number):
-        #         raise exceptions.ValidationError("Invalid phone number format")
-        #     formatted_number = phonenumbers.format_number(parsed_number, phonenumbers.PhoneNumberFormat.E164)
-        #     return formatted_number
-            
-        # except phonenumbers.NumberParseException:
-        #     raise exceptions.ValidationError("Invalid phone number format")
-        # except Exception as e:
-        #     print(e)
-        #     raise exceptions.ValidationError("Error Ocuured During The Validation of Phone Number")
     
     def _create_jwt_token(self, user, data):
         
@@ -241,6 +242,15 @@ class LoginApiView(APIView):
     
     
 class LogOutAPIView(APIView):
+    """
+    API view  for user logout
+    Args:
+        APIView (class): This view is to handle user logout. 
+        Method: POST.
+        data: {
+            refresh_token: example buBGBUYBYg674#$#@Q#@%fvsaf@#RCRCTYITIV%^&#sasf$@#%$asfd#$%^^&DCGVGK,
+        }
+    """
     # authentication_classes = [JWTAuthentication]
 
     def post(self, request):
@@ -269,13 +279,17 @@ class LogOutAPIView(APIView):
 
 
 class TwoFactorAPIView(APIView):
+    """
+    API is under Development 
+    status: Not ready
+    
+    """
     def post(self, request):
         id = request.data["digits"]
         user = User.objects.filter(pk=id)
         if not user:
             raise exceptions.AuthenticationFailed("Invalid Password")
         secret = user.tfa_secret if user.tfa_secret != "" else request.data["secret"]
-        # print(Color.G,user.tfa_secret,'oooooooooooooyeaaaaaaaaaaaaaaaaaaaaaaa'.data,Color.E)
         access_token = create_access_token(id)
         refresh_token = create_refresh_token(id)
         UserToken.objects.create(
@@ -291,26 +305,47 @@ class TwoFactorAPIView(APIView):
 
 
 class RefreshAPIView(APIView):
+    """
+    API view  for user refresh token
+    Args:
+        APIView (class): This view is to handle user refresh token. 
+        Method: POST.
+        data: {
+            token: example buBGBUYBYg674#$#@Q#@%fvsaf@#RCRCTYITIV%^&#sasf$@#%$asfd#$%^^&DCGVGK,
+        }
+    """
     def post(self, request):
         refresh_token = request.data["token"]
-        print(refresh_token)
         id = decode_refresh_token(refresh_token)
-        print(id)
-        if not UserToken.objects.filter(
-            user_id=id,
-            token=refresh_token,
-            expired_at__gt=datetime.datetime.now(tz=datetime.timezone.utc),
-        ).exists():
-            raise exceptions.AuthenticationFailed("unauthenticated")
+        
+        self._verify_token(id, refresh_token)
         access_token = create_access_token(id)
-        data = {"access_token": access_token}
-        response = Response(data=data, status=status.HTTP_200_OK)
+        response = self.get_response(access_token)
         return response
-
+    
+    def get_response(self, access_token):
+        data = {"access_token": access_token}
+        return Response(data=data, status=status.HTTP_200_OK)
+    
+    def _verify_token(self, id, refresh_token):
+        try:
+            if not UserToken.objects.filter(
+                user_id=id,
+                token=refresh_token,
+                expired_at__gt=datetime.datetime.now(tz=datetime.timezone.utc),
+            ).exists():
+                raise exceptions.AuthenticationFailed("unauthenticated")
+        except:
+            raise exceptions.AuthenticationFailed("unauthenticated")
 
 
 
 class ForgotAPIView(APIView):
+    """
+    API is under Development 
+    status: Not ready
+    
+    """
     def post(self, request):
         token = "".join(
             random.choice(string.ascii_lowercase + string.digits) for _ in range(18)
@@ -326,6 +361,11 @@ class ForgotAPIView(APIView):
 
 
 class ResetAPIView(APIView):
+    """
+    API is under Development 
+    status: Not ready
+    
+    """
     def post(self, request):
         data = request.data
         if data["password"] != data["confirm_password"]:

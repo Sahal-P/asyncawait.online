@@ -1,11 +1,11 @@
 from celery import shared_task
-from .models import Chat, MediaMessage, Message, UserProfile
+from chat.models import  Message
 from account.models import User
 from datetime import datetime
-from .consumer import MESSAGE_TYPE
+from chat.types import MESSAGE_TYPE
 
 @shared_task
-def shared_task():
+def shared_task1():
     for i in range(10):
         print('celery',i)
     return
