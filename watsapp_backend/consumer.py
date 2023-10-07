@@ -19,7 +19,6 @@ class UserConnection(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_group_name = self.scope["url_route"]["kwargs"]["room_name"]
         await self.set_online(self.room_group_name)
-        print(self.room_group_name,'user connection --------------------------------------')
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
         await self.send(
@@ -72,6 +71,7 @@ class UserConnection(AsyncWebsocketConsumer):
         try:
             profile = UserProfile.objects.get(user_id=id)
             profile.is_online = True
+            profile.last_seen = datetime.now()
             profile.save()
         except Exception as e:
             print(e)

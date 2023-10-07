@@ -13,14 +13,14 @@ COPY . /app
 WORKDIR /app
 
 
-COPY ./start.sh .
+RUN sed -i 's/\r$//' /app/start.sh 
 RUN chmod +x /app/start.sh
-COPY ./worker.sh .
+RUN sed -i 's/\r$//' /app/worker.sh 
 RUN chmod +x /app/worker.sh 
 
-RUN sed -i 's/\r$//g' /app/start.sh
+# RUN sed -i 's/\r$//g' /app/start.sh
 # RUN chmod +x /app/
-RUN sed -i 's/\r$//g' /app/worker.sh
+# RUN sed -i 's/\r$//g' /app/worker.sh
 # RUN chmod +x /app/celery/worker/
 
 EXPOSE 8000
