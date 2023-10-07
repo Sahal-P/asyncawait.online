@@ -36,19 +36,18 @@ class RegisterApiView(APIView):
             confirm_password: ********,
         }
     """
-    throttle_classes = "register_rate"
+    # throttle_classes = "register_rate"
     
     def post(self, request):
         # Extract and validate data from the request 
-        print(request.data)
-        data = self._get_validated_data(request.data)
-        print(data)
-        # Creates a new user instance
-        
-        serializer = UserSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-                
+        try:
+            data = self._get_validated_data(request.data)
+            # Creates a new user instance
+            serializer = UserSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        except Exception as e:
+            raise exceptions.APIException(f"UnKnown Error: {str(e)}")
         # Craft and return a response with appropriate status code
         # return Response(data=None, status=status.HTTP_201_CREATED)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -108,15 +107,13 @@ class CreateProfileApiView(APIView):
         try:
             data, user = self._get_validated_data(request.data)
             # data.add(user)
-            print(data, user)
             # Creates a new user instance
             serializer = self.serializer_class(user.profile, data=data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            print(serializer.data)
             response = self._get_response(user)
         except Exception as e:
-            print(e)
+            raise exceptions.APIException(f"UnKnown Error: {str(e)}")
         # Craft and return a response with appropriate status code
         # return Response(data=None, status=status.HTTP_201_CREATED)
         return response
@@ -179,24 +176,24 @@ class LoginApiView(APIView):
             password: ********,
         }
     """
-    throttle_classes = "login_rate"
+    # throttle_classes = "login_rate"
     
     def post(self, request):
-        
-        user = self._get_validated_data(request.data)
-        serializer = UserDetailsSerializer(user)
-        data = serializer.data
-        token = self._create_jwt_token(user, data)
-        # response = self._set_httponly_cookie(data, token)
-        response = self._add_jwt_token(data, token)
-        
+        try:
+            user = self._get_validated_data(request.data)
+            serializer = UserDetailsSerializer(user)
+            data = serializer.data
+            token = self._create_jwt_token(user, data)
+            # response = self._set_httponly_cookie(data, token)
+            response = self._add_jwt_token(data, token)
+        except Exception as e:
+            raise exceptions.APIException(f"UnKnown Error: {str(e)}")
         return response
     
     def _get_validated_data(self, data):
         
         phone_number = self._validate_phone_nummber(data)
         password = data["password"]
-        print(phone_number,password)
         user = User.objects.filter(phone_number=phone_number).first()
         if user is None:
             raise exceptions.AuthenticationFailed("Invalid Credentials")
