@@ -25,27 +25,27 @@ services:
     # deploy:
     #   replicas: 3  # Set the desired number of replicas
     
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    volumes:
-      - frontend:/app/frontend
-    ports:
-      - 3000:3000
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - frontend:/app/frontend
+  #   ports:
+  #     - 3000:3000
 
-  postgresql:
-    image: postgres:latest
-    environment:
-      - POSTGRES_USER=sahal
-      - POSTGRES_PASSWORD=09876
-      - POSTGRES_DB=Chat
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgresql_data:/var/lib/postgresql/data
-    networks:
-      - my_network
+  # postgresql:
+  #   image: postgres:latest
+  #   environment:
+  #     - POSTGRES_USER=sahal
+  #     - POSTGRES_PASSWORD=09876
+  #     - POSTGRES_DB=Chat
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgresql_data:/var/lib/postgresql/data
+  #   networks:
+  #     - my_network
   
   rabbitmq:
     image: rabbitmq:management
@@ -97,5 +97,5 @@ services:
 
 volumes:
   redis_data:
-  frontend:
-  postgresql_data:
+  # frontend:
+  # postgresql_data:
