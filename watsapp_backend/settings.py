@@ -191,6 +191,7 @@ else:
 CSRF_TRUSTED_ORIGINS = [
     config("CSRF_TRUSTED_ORIGIN_1"),
     config("CSRF_TRUSTED_ORIGIN_2"),
+    config("CSRF_TRUSTED_ORIGIN_3"),
 ]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
