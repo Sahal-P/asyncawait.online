@@ -9,7 +9,7 @@ SECRET_KEY = config('SECRET_KEY')
 
 DEBUG = config('DEBUG', cast=bool)
 
-ALLOWED_HOSTS = ["localhost", "api.asyncawait.dev","asyncawait.dev", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "api.asyncawait.online","asyncawait.online", "127.0.0.1"]
 
 INTERNAL_IPS = [
     "127.0.0.1",
