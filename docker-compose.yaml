@@ -1,8 +1,8 @@
 version: "3"
 
-networks:
-  my_network:
-    driver: bridge
+# networks:
+#   my_network:
+#     driver: bridge
 
 services:
   backend:
@@ -17,8 +17,8 @@ services:
       - 8000:8000
       # - "8001:8000"   # Port mapping for the second replica
       # - "8002:8000"   # Port mapping for the third replica
-    networks:
-      - my_network
+    # networks:
+    #   - my_network
     depends_on:
       - redis
       # - postgresql
@@ -54,8 +54,8 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
-    networks:
-      - my_network
+    # networks:
+    #   - my_network
 
   redis:
     image: redis
@@ -64,8 +64,8 @@ services:
     volumes:
     - redis_data:/data
     restart: always
-    networks:
-      - my_network
+    # networks:
+    #   - my_network
 
   worker:
     restart: always
@@ -74,8 +74,8 @@ services:
     depends_on:
       - redis
       # - postgresql
-    networks:
-      - my_network
+    # networks:
+    #   - my_network
       
   # nginx:
   #   build:
