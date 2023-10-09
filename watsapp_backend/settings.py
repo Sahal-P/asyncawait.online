@@ -188,6 +188,10 @@ else:
     MEDIA_ROOT = os.path.join(BASE_DIR, config("MEDIA_ROOT"))
     MEDIA_URL = config("MEDIA_URL")
 
+CSRF_TRUSTED_ORIGINS = [
+    config("CSRF_TRUSTED_ORIGIN_1"),
+    config("CSRF_TRUSTED_ORIGIN_2"),
+]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -197,6 +201,7 @@ CORS_ORIGIN_WHITELIST = [
     config("CORS_ORIGIN_WHITELIST_1"),
     config("CORS_ORIGIN_WHITELIST_2"),
     config("CORS_ORIGIN_WHITELIST_3"),
+    config("CORS_ORIGIN_WHITELIST_4"),
 ]
 
 CORS_ALLOW_METHODS = [
@@ -212,6 +217,7 @@ CORS_ALLOWED_ORIGINS = [
     config("CORS_ALLOWED_ORIGINS_1"),
     config("CORS_ALLOWED_ORIGINS_2"),
     config("CORS_ALLOWED_ORIGINS_3"),
+    config("CORS_ALLOWED_ORIGINS_4"),
 ]
 
 CORS_ALLOW_HEADERS = DEFAULT_HEADERS
