@@ -1,7 +1,7 @@
 from pathlib import Path
 import os
 from decouple import config
-
+from .defaults import DEFAULT_HEADERS
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -212,11 +212,7 @@ CORS_ALLOWED_ORIGINS = [
     config("CORS_ALLOWED_ORIGINS_2"),
 ]
 
-CORS_ALLOW_HEADERS = [
-    "Content-Type",
-    "X-User-Identifier",
-    "Authorization",
-]
+CORS_ALLOW_HEADERS = DEFAULT_HEADERS
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
