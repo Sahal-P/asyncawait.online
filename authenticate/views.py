@@ -243,6 +243,10 @@ class LoginApiView(APIView):
     
     def _add_jwt_token(self, data, token):
         response = Response()
+        response["Access-Control-Allow-Origin"] = "https://asyncawait.online"
+        response["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type, X-User-Identifier, Authorization"
+        response["Access-Control-Allow-Credentials"] = "true"
         data['access_token'], data['refresh_token'] = token[0], token[1]
         response.data = data
         return response
