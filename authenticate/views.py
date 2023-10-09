@@ -179,7 +179,9 @@ class LoginApiView(APIView):
     # throttle_classes = "login_rate"
     
     def post(self, request):
+        print("@@@@@@@@ api called here @@@@@@@@@@@ 1")
         try:
+            print("@@@@@@@@ api called here @@@@@@@@@@@ 2")
             user = self._get_validated_data(request.data)
             serializer = UserDetailsSerializer(user)
             data = serializer.data
@@ -187,6 +189,7 @@ class LoginApiView(APIView):
             # response = self._set_httponly_cookie(data, token)
             response = self._add_jwt_token(data, token)
         except Exception as e:
+            print("@@@@@@@@ api called here @@@@@@@@@@@ 3")
             raise exceptions.APIException(f"UnKnown Error: {str(e)}")
         return response
     
