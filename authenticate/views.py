@@ -177,6 +177,13 @@ class LoginApiView(APIView):
         }
     """
     # throttle_classes = "login_rate"
+    def options(self, request):
+        response = Response()
+        response["Access-Control-Allow-Origin"] = "https://asyncawait.online"
+        response["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response["Access-Control-Allow-Headers"] = "Content-Type, X-User-Identifier, Authorization"
+        response["Access-Control-Allow-Credentials"] = "true"
+        return response
     
     def post(self, request):
         print("@@@@@@@@ api called here @@@@@@@@@@@ 1")
@@ -189,7 +196,7 @@ class LoginApiView(APIView):
             # response = self._set_httponly_cookie(data, token)
             response = self._add_jwt_token(data, token)
         except Exception as e:
-            print("@@@@@@@@ api called here @@@@@@@@@@@ 3")
+            print(f"@@@@@@@@ api called here @@@@@@@@@@@ 3  {str(e)}")
             raise exceptions.APIException(f"UnKnown Error: {str(e)}")
         return response
     
