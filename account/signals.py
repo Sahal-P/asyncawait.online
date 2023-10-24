@@ -8,6 +8,3 @@ from chat.models import UserProfile
 def profile_save_handler(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
-    print("user saved")
-    print("instance", instance)
-    print("created", created)

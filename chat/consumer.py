@@ -10,6 +10,7 @@ from account.uuid_serializer import UUID, UUIDEncoder
 from notification.tasks import send_websocket_notification
 from chat.tasks import save_message, save_message_status
 from chat.types import MESSAGE_ERROR_TYPE, MESSAGE_TYPE
+from chat.serializers import ChatSerializer
 
 MESSAGE_MAX_LENGTH = 100
 
@@ -22,7 +23,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_group_name = self.scope["url_route"]["kwargs"]["room_name"]
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
-        self.chat = await self.get_chat_obj(self.room_group_name)
+        self.chat_id = await self.get_chat_obj(self.room_group_name)
         await self.send(json.dumps({"status": "200"}))
 
     async def receive(self, text_data):
@@ -34,12 +35,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
         timestampe = text_data_json.get("timestampe")
         # Handle received data
         if msg_type == MESSAGE_TYPE["TEXT_MESSAGE"]:
-            send_websocket_notification.delay(reciever, content, sender, timestampe)
-            message_id = uuid.UUID(text_data_json.get("id"))
-            # message_id = uuid.uuid4()
-            id = text_data_json.get("id")
-            # await self.save_text_message(text_data_json, message_id)
-            save_message.delay(self.chat, text_data_json, message_id)
+            try:
+                send_websocket_notification.delay(reciever, content, sender, timestampe)
+                message_id = uuid.UUID(text_data_json.get("id"))
+                # message_id = uuid.uuid4()
+                id = text_data_json.get("id")
+                # await self.save_text_message(text_data_json, message_id)
+                save_message.delay(self.chat_id, text_data_json, message_id)
+            except Exception as e:
+                pass
+            print('ok sent')
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -164,4 +169,5 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_chat_obj(self, id):
-        return Chat.objects.filter(id=id).first()
+        chat = Chat.objects.filter(id=id).first()
+        return chat.id

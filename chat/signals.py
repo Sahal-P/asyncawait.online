@@ -7,8 +7,8 @@ from django.core.cache import cache
 
 @receiver(post_save, sender=Notification)
 def send_notification_on_save(sender, instance, **kwargs):
+    pass
     # Get the user's room_group_name from the Notification's user
-    print('signal')
     # room_group_name = "f2f0fd53-20c0-49c6-8ed6-fcc6005028ad"
 
     # # Send the WebSocket notification to the user's group
