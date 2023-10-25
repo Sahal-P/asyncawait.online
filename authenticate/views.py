@@ -47,7 +47,10 @@ class RegisterApiView(APIView):
             serializer.is_valid(raise_exception=True)
             serializer.save()
         except Exception as e:
-            raise exceptions.APIException(f"UnKnown Error: {str(e)}")
+            if isinstance(e, exceptions.ValidationError):
+                raise e
+            else:
+                raise exceptions.APIException(f"Unknown error occured")
         # Craft and return a response with appropriate status code
         # return Response(data=None, status=status.HTTP_201_CREATED)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -113,7 +116,10 @@ class CreateProfileApiView(APIView):
             serializer.save()
             response = self._get_response(user)
         except Exception as e:
-            raise exceptions.APIException(f"UnKnown Error: {str(e)}")
+            if isinstance(e, exceptions.ValidationError):
+                raise e
+            else:
+                raise exceptions.APIException(f"Unknown error occured")
         # Craft and return a response with appropriate status code
         # return Response(data=None, status=status.HTTP_201_CREATED)
         return response
@@ -179,9 +185,7 @@ class LoginApiView(APIView):
     # throttle_classes = "login_rate"
     
     def post(self, request):
-        print("@@@@@@@@ api called here @@@@@@@@@@@ 1")
         try:
-            print("@@@@@@@@ api called here @@@@@@@@@@@ 2")
             user = self._get_validated_data(request.data)
             serializer = UserDetailsSerializer(user)
             data = serializer.data
@@ -189,8 +193,10 @@ class LoginApiView(APIView):
             # response = self._set_httponly_cookie(data, token)
             response = self._add_jwt_token(data, token)
         except Exception as e:
-            print(f"@@@@@@@@ api called here @@@@@@@@@@@ {str(e)}")
-            raise exceptions.APIException(f"UnKnown Error: {str(e)}")
+            if isinstance(e, exceptions.AuthenticationFailed) or isinstance(e, exceptions.ValidationError):
+                raise e
+            else:
+                raise exceptions.APIException(f"Unknown Error occured")
         return response
     
     def _get_validated_data(self, data):
